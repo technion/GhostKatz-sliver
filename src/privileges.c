@@ -11,7 +11,6 @@ BOOL EnablePrivilege(ULONG priv)
     NTSTATUS status = pRtlAdjustPrivilege(priv, TRUE, FALSE, &old);
     if (FAILED(status))
     {
-        BeaconPrintf(CALLBACK_ERROR, "Failed to enable privilege!\n");
         return FALSE;
     }
 
