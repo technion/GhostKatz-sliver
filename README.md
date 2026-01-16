@@ -13,8 +13,16 @@ Load `goonkatz.cna` Aggressor Script into your Script Manager
 To run Goonkatz, use the command `goonkatz [logonpasswords/wdigest]
 
 You can run the help command in your Beacon console with: `help goonkatz`
+
 ```
-Output here
+beacon> help goonkatz
+Synopsis: goonkatz [logonpasswords/wdigest]
+Description:
+  Dump credentials from LSASS by using signed kernel drivers to read physical memory.
+
+Examples:
+  goonkatz logonpasswords
+  goonkatz wdigest
 ```
 
 ## Resources

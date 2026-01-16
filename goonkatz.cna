@@ -14,7 +14,7 @@ alias goonkatz {
     $data = substr($0, 9);
     @args = split(" ", $data);
 
-	if (size(@_) < 2)
+	if (size(@_) != 2)
 	{
 		berror($1, "Invalid number of arguments! (See 'help goonkatz')");
 		return -1;
@@ -36,13 +36,13 @@ alias goonkatz {
 	closef($handle);
 	if(strlen($bof) < 1)
 	{
-		berror($1,"Error: BOF bin could not be found. Please ensure the compiled BOF (.o file) exists in the bin directory");
+		berror($1,"BOF bin could not be found. Please ensure the compiled BOF (.o file) exists in the bin directory");
 		return;
 	}
 
     println("$argument");
 
     # Prepare the arguments
-    $args = bof_pack($1, "Z", $argument);
+    $args = bof_pack($1, "z", $argument);
     beacon_inline_execute($1, $bof, "go", $args); # $args
 }

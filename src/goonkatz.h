@@ -25,3 +25,4 @@ WINBASEAPI HANDLE WINAPI KERNEL32$CreateFileW (LPCWSTR lpFileName, DWORD dwDesir
 
 
 // MSVCRT
+WINBASEAPI int __cdecl MSVCRT$strcmp(const char* _Str1, const char* _Str2);
