@@ -3,7 +3,7 @@ Dump LSASS credentials from physical memory by exploiting signed vulnerable driv
 
 Why did we make GhostKatz? We wanted to start learning how to exploit kernel drivers and thought this was a cool project. We were also inspired when we saw Outflank's KernelKatz tool and wanted to use it but we do not have Outflank since we are students. So we made our own.
 
-For best results, GhostKatz is intended to operate with kernel drivers that expose read-primitive vulnerabilities and are not blocked during loading. This public release does not include exploits for previously undisclosed drivers. Instead, the project is designed to be modular and extensible, allowing users to research their own drivers and integrate them by extending the read-memory primitive functions in `utils.c`. Internally, we have automated the discovery and exploitation process and maintain several signed kernel drivers with exploits already written.
+For best results, GhostKatz is intended to operate with kernel drivers that expose read-primitive vulnerabilities and are not blocked during loading. This public release does not include exploits for previously undisclosed drivers. Instead, the project is designed to be modular and extensible, allowing users to research their own drivers and integrate them by extending the read-memory primitive functions in `utils.c`. Internally, we have automated the discovery and exploitation process and maintain several signed kernel drivers with written exploits.
 
 ## Usage
 Run `make` to compile the BOFs.
