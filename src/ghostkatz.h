@@ -46,3 +46,9 @@ WINBASEAPI void* __cdecl MSVCRT$memcpy(void* __restrict__ _Dst, const void* __re
 #define memcpy MSVCRT$memcpy
 DECLSPEC_IMPORT int __cdecl MSVCRT$strcmp(const char* _Str1, const char* _Str2);
 #define strcmp MSVCRT$strcmp
+WINBASEAPI int __cdecl MSVCRT$memcmp(const void* _Buf1, const void* _Buf2, size_t _Size);
+#define memcmp MSVCRT$memcmp
+DECLSPEC_IMPORT void * __cdecl MSVCRT$malloc(size_t);
+#define malloc MSVCRT$malloc
+DECLSPEC_IMPORT void   __cdecl MSVCRT$free(void *);
+#define free MSVCRT$free

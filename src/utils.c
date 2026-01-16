@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <stdlib.h>
 #include "ghostkatz.h"
 
 BOOL isServiceInstalled()
