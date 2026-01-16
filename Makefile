@@ -1,4 +1,4 @@
-BOFNAME := goonkatz
+BOFNAME := ghostkatz
 BIN_DIR := bin
 
 CC_x64  := x86_64-w64-mingw32-gcc

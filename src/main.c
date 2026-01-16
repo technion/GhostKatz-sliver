@@ -1,7 +1,7 @@
 #include "beacon.h"
 #include "defs.h"
 #include "ioctl.h"
-#include "goonkatz.h"
+#include "ghostkatz.h"
 
 
 #include "utils.c"

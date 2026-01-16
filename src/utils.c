@@ -1,5 +1,5 @@
 #include <windows.h>
-#include "goonkatz.h"
+#include "ghostkatz.h"
 
 BOOL isServiceInstalled()
 {
