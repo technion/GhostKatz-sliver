@@ -1,0 +1,2 @@
+// Privileges
+#define SE_PROF_SINGLE_PROCESS_PRIVILEGE 13L

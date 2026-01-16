@@ -1,0 +1,3 @@
+#define TPWSAV_READ_IOCTL 0x2220C8
+#define TPWSAV_WRITE_IOCTL 0x2220cc
+#define TPWSAV_DEVICE_NAME L"\\\\.\\EBIoDispatch"

