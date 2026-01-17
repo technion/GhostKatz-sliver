@@ -49,7 +49,7 @@ BOOL BuildGlobalDatabase(SUPERFETCH_INFORMATION* superfetchInfo, PPF_MEMORY_RANG
         // We build the PF_PFN_PRIO_REQUEST struct to send a proper request
         // MMPFN_IDENTITY gets filled and we can parse it for detailed information
         size_t PfnDataSize = FIELD_OFFSET(PF_PFN_PRIO_REQUEST, PageData) + pageCount * sizeof(MMPFN_IDENTITY);
-        PF_PFN_PRIO_REQUEST* PfPfnPrioRequestData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, PfnDataSize);
+        PF_PFN_PRIO_REQUEST* PfPfnPrioRequestData = (PF_PFN_PRIO_REQUEST*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, PfnDataSize);
         PfPfnPrioRequestData->Version = 1;
         PfPfnPrioRequestData->RequestFlags = 1;
         PfPfnPrioRequestData->PfnCount = pageCount;

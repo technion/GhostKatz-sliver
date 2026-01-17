@@ -15,18 +15,22 @@ DECLSPEC_IMPORT BOOL WINAPI KERNEL32$CloseHandle(HANDLE);
 #define CloseHandle KERNEL32$CloseHandle
 DECLSPEC_IMPORT BOOL WINAPI KERNEL32$DeviceIoControl(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
 #define DeviceIoControl KERNEL32$DeviceIoControl
-WINBOOL WINAPI KERNEL32$EnumDeviceDrivers(LPVOID *lpImageBase,DWORD cb,LPDWORD lpcbNeeded);
-#define EnumDeviceDrivers KERNEL32$EnumDeviceDrivers
+DECLSPEC_IMPORT BOOL WINAPI PSAPI$EnumDeviceDrivers(LPVOID *lpImageBase,DWORD cb,LPDWORD lpcbNeeded);
+#define pEnumDeviceDrivers PSAPI$EnumDeviceDrivers
 
 
 // KERNEL32
-WINBASEAPI DWORD WINAPI KERNEL32$GetLastError (VOID);
+WINBASEAPI BOOL WINAPI KERNEL32$FreeLibrary(HMODULE hLibModule);
+#define FreeLibrary KERNEL32$FreeLibrary
+WINBASEAPI HMODULE WINAPI KERNEL32$LoadLibraryA(LPCSTR lpLibFileName);
+#define LoadLibraryA KERNEL32$LoadLibraryA
+WINBASEAPI DWORD WINAPI KERNEL32$GetLastError(VOID);
 #define GetLastError KERNEL32$GetLastError
-WINBASEAPI FARPROC WINAPI KERNEL32$GetProcAddress (HMODULE hModule, LPCSTR lpProcName);
+WINBASEAPI FARPROC WINAPI KERNEL32$GetProcAddress(HMODULE hModule, LPCSTR lpProcName);
 #define GetProcAddress KERNEL32$GetProcAddress
-WINBASEAPI HMODULE WINAPI KERNEL32$GetModuleHandleA (LPCSTR lpModuleName);
+WINBASEAPI HMODULE WINAPI KERNEL32$GetModuleHandleA(LPCSTR lpModuleName);
 #define GetModuleHandleA KERNEL32$GetModuleHandleA
-WINBASEAPI HANDLE WINAPI KERNEL32$CreateFileW (LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+WINBASEAPI HANDLE WINAPI KERNEL32$CreateFileW(LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
 #define CreateFileW KERNEL32$CreateFileW
 WINBASEAPI void* WINAPI KERNEL32$HeapAlloc(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes);
 #define HeapAlloc KERNEL32$HeapAlloc
@@ -52,3 +56,5 @@ DECLSPEC_IMPORT void * __cdecl MSVCRT$malloc(size_t);
 #define malloc MSVCRT$malloc
 DECLSPEC_IMPORT void   __cdecl MSVCRT$free(void *);
 #define free MSVCRT$free
+WINBASEAPI int __cdecl MSVCRT$_wcsicmp(wchar_t *string1, wchar_t *string2);
+#define _wcsicmp MSVCRT$_wcsicmp
