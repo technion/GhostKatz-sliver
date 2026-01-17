@@ -1,9 +1,12 @@
 # GhostKatz
 Dump LSASS credentials from physical memory by exploiting signed vulnerable drivers exposing physical memory read primitives via `MmMapIoSpace`.
 
-Why did we make GhostKatz? We wanted to start learning how to exploit kernel drivers and thought this was a cool project. We were also inspired when we saw Outflank's KernelKatz tool and wanted to use it but we do not have Outflank since we are students. So we made our own.
+This release of GhostKatz uses the TpwSav.sys driver which has already been publicly disclosed as vulnerable. For best results, GhostKatz is intended to operate with kernel drivers that expose read-memory primitive vulnerabilities and are not blocked during loading / publicly known. This public release does not include exploits for previously undisclosed drivers. Instead, the project is designed to be modular and extensible, allowing users to research their own drivers and integrate them by extending the read-memory primitive functions in `utils.c`. Internally, we have automated the discovery and exploitation process and maintain several signed kernel drivers with exploits already written.
 
-For best results, GhostKatz is intended to operate with kernel drivers that expose read-primitive vulnerabilities and are not blocked during loading. This public release does not include exploits for previously undisclosed drivers. Instead, the project is designed to be modular and extensible, allowing users to research their own drivers and integrate them by extending the read-memory primitive functions in `utils.c`. Internally, we have automated the discovery and exploitation process and maintain several signed kernel drivers with written exploits.
+This tool was developed in collaboration between [Julian Peña](https://github.com/RainbowDynamix) and [Eric Esquivel](https://github.com/EricEsquivel).
+
+## Why did we make GhostKatz?
+We wanted to start learning how to exploit kernel drivers and thought this would be a cool project. We were also inspired when we saw Outflank's KernelKatz tool and wanted to use it, but we do not have Outflank since we are students. So we made our own.
 
 ## Usage
 Run `make` to compile the BOFs.
