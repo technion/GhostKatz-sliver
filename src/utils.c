@@ -213,28 +213,20 @@ DWORD64 ReadAddressAtPhysicalAddressLocation(HANDLE hFile, DWORD64 PhysicalAddre
     return address;
 }
 
-/*
-* TODO: Fix me!
+static PVOID lpImageBase[2048]; // Move lpImageBase off the stack to avoid '___chkstk_ms' error
 DWORD64 GetNtKernelVirtualAddresses(void)
 {
-    PVOID lpImageBase[2048];
-    DWORD cb = 2048;
-    DWORD lpcbNeeded;
-    BOOL bResult = EnumDeviceDrivers(lpImageBase, cb, &lpcbNeeded);
-    if (!bResult)
-    {
-        BeaconPrintf(CALLBACK_OUTPUT, "Error when calling EnumDeviceDrivers: 0x%lx\n", GetLastError());
-        return NULL;
+    DWORD lpcbNeeded = 0;
+    DWORD cb = sizeof(lpImageBase);
+
+    if (!EnumDeviceDrivers(lpImageBase, cb, &lpcbNeeded) || lpcbNeeded < sizeof(PVOID)) {
+        BeaconPrintf(CALLBACK_OUTPUT, "EnumDeviceDrivers failed: 0x%lx\n", GetLastError());
+        return 0;
     }
 
-    int numberOfDevices = lpcbNeeded / sizeof(LPVOID);
-    //printf("Number of devices enumerated: %d\n", numberOfDevices);
-
-    DWORD64 NtVirtualBaseAddress = (DWORD64)lpImageBase[0]; // ntoskrnl.exe
-    //printf("[+] Ntoskrnl Virtual Address: 0x%llx\n", NtVirtualBaseAddress);
-    return NtVirtualBaseAddress;
+    return (DWORD64)lpImageBase[0];
 }
-*/
+
 
 // Used for getting EPROCESS structs eventually
 DWORD64 GetFunctionOffsetFromNtoskrnl(char* FunctionName)
