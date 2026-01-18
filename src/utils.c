@@ -270,7 +270,7 @@ DWORD SearchPattern(unsigned char* mem, DWORD NumOfBytesToSearch, unsigned char*
 {
     ULONG offset = 0;
 
-    // Hunt for signature locally to avoid a load of RPM calls
+    // Hunt for signature locally to avoid a load of DeviceIoControl calls
     for (int i = 0; i < NumOfBytesToSearch; i++) {
         if (*(unsigned char*)(mem + i) == signature[0] && *(unsigned char*)(mem + i + 1) == signature[1]) {
             if (memcmp(mem + i, signature, signatureLen) == 0) {

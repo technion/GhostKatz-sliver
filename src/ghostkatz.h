@@ -16,7 +16,7 @@ DECLSPEC_IMPORT BOOL WINAPI KERNEL32$CloseHandle(HANDLE);
 DECLSPEC_IMPORT BOOL WINAPI KERNEL32$DeviceIoControl(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
 #define DeviceIoControl KERNEL32$DeviceIoControl
 DECLSPEC_IMPORT BOOL WINAPI PSAPI$EnumDeviceDrivers(LPVOID *lpImageBase,DWORD cb,LPDWORD lpcbNeeded);
-#define pEnumDeviceDrivers PSAPI$EnumDeviceDrivers
+#define EnumDeviceDrivers PSAPI$EnumDeviceDrivers
 
 
 // KERNEL32
