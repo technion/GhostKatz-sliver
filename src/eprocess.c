@@ -1,5 +1,4 @@
 #include <windows.h>
-#include <psapi.h>
 #include <wchar.h>
 
 #include "ghostkatz.h"
