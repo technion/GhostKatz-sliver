@@ -13,7 +13,7 @@ Run `make` to compile the BOFs.
 
 Load the `ghostkatz.cna` Aggressor Script into your Script Manager.
 
-To run GhostKatz, use the command `ghostkatz [logonpasswords/wdigest]`.
+To run GhostKatz, use the command `ghostkatz -prv <provider id> [logonpasswords/wdigest]`.
 
 You can run the help command in your Beacon console with: `help ghostkatz`.
 
