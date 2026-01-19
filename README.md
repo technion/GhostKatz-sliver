@@ -36,6 +36,7 @@ Drivers that can be exploited with GhostKatz
 |----|--------------------|----------------|------------------------------------------------------------------|-----------------|
 | 1  | Toshiba            | TPwSav         | 011df46e94218cbb2f0b8da13ab3cec397246fdc63436e58b1bf597550a647f6 | No              | 
 | 2  | TechPowerUp        | ThrottleStop   | 16f83f056177c4ec24c7e99d01ca9d9d6713bd0497eeedb777a3ffefa99c97f0 | No              |
+| 3  | Lenovo             | LnvMSRIO       | 245b6ab442a7d53dc30ece28e1c6de727c019669385877cbe929b81aa1a2ad2f | No              |
 
 ###### * At commit time. May be inaccurate.
 
