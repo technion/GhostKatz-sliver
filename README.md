@@ -3,7 +3,7 @@ Dump LSASS credentials from physical memory by exploiting signed vulnerable driv
 
 This tool was developed in collaboration between [Julian Peña](https://github.com/RainbowDynamix) and [Eric Esquivel](https://github.com/EricEsquivel).
 
-This release of GhostKatz uses the TpwSav.sys driver which has already been publicly disclosed as vulnerable. For best results, GhostKatz is intended to operate with kernel drivers that expose read-memory primitive vulnerabilities and are not blocked during loading / publicly known. This public release does not include exploits for previously undisclosed drivers. Instead, the project is designed to be modular and extensible, allowing users to research their own drivers and integrate them by extending the read-memory primitive functions in `utils.c`. Internally, we have automated the discovery and exploitation process and maintain several signed kernel drivers with written exploits.
+This release of GhostKatz uses drivers that have already been publicly disclosed as vulnerable. For best results, GhostKatz is intended to operate with kernel drivers that expose read-memory primitive vulnerabilities and are not blocked during loading / publicly known. This public release does not include exploits for previously undisclosed drivers. Instead, the project is designed to be modular and extensible, allowing users to research their own drivers and integrate them by extending the read-memory primitive functions in `utils.c`. Internally, we have automated the discovery and exploitation process and maintain several signed kernel drivers with written exploits.
 
 ## Why did we make GhostKatz?
 We wanted to start learning how to exploit kernel drivers and thought this would be a cool project. We were also inspired when we saw Outflank's KernelKatz tool and wanted to use it, but we do not have Outflank since we are students. So we made our own.
@@ -19,14 +19,26 @@ You can run the help command in your Beacon console with: `help ghostkatz`.
 
 ```
 beacon> help ghostkatz
-Synopsis: ghostkatz [logonpasswords/wdigest]
+Synopsis: ghostkatz -prv <provider id> [logonpasswords/wdigest]
 Description:
   Dump credentials from LSASS by using signed kernel drivers to read physical memory.
 
 Examples:
-  ghostkatz logonpasswords
-  ghostkatz wdigest
+  ghostkatz -prv 1 logonpasswords
+  ghostkatz -prv 2 wdigest
 ```
+
+## Providers
+
+Drivers that can be exploited with GhostKatz
+
+| Id | Vendor             | Driver Name    | SHA256                                                           | Blacklisted?    |
+|----|--------------------|----------------|------------------------------------------------------------------|-----------------|
+| 1  | Toshiba            | TPwSav         | 011df46e94218cbb2f0b8da13ab3cec397246fdc63436e58b1bf597550a647f6 | No              | 
+| 2  | TechPowerUp        | ThrottleStop   | 16f83f056177c4ec24c7e99d01ca9d9d6713bd0497eeedb777a3ffefa99c97f0 | No              |
+
+###### * At commit time. May be inaccurate.
+
 
 ## Resources
 * [Physical Graffiti Lsass](https://adepts.of0x.cc/physical-graffiti-lsass/)
