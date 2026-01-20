@@ -12,10 +12,10 @@ $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
 x86:
-	$(CC_x86) -o $(BIN_DIR)/$(BOFNAME).x86.o -Os -c src/main.c -Wno-pointer-to-int-cast
+	$(CC_x86) -o $(BIN_DIR)/$(BOFNAME).x86.o -Os -c src/main.c -Wno-pointer-to-int-cast -Wno-int-conversion
 
 x64:
-	$(CC_x64) -o $(BIN_DIR)/$(BOFNAME).x64.o -Os -c src/main.c -Wno-pointer-to-int-cast
+	$(CC_x64) -o $(BIN_DIR)/$(BOFNAME).x64.o -Os -c src/main.c -Wno-pointer-to-int-cast -Wno-int-conversion
 
 clean:
 	rm -f $(BIN_DIR)/$(BOFNAME).*.o

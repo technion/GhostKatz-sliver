@@ -1,6 +1,8 @@
 #include <windows.h>
 #include <winternl.h>
 
+// so every file in the program can access the beacon output buffer
+extern formatp outputbuffer;
 
 // ADVAPI32
 WINADVAPI SC_HANDLE WINAPI ADVAPI32$OpenSCManagerA(LPCSTR lpMachineName,LPCSTR lpDatabaseName,DWORD dwDesiredAccess);
@@ -38,12 +40,14 @@ WINBASEAPI BOOL WINAPI KERNEL32$HeapFree(HANDLE, DWORD, PVOID);
 #define HeapFree KERNEL32$HeapFree
 WINBASEAPI HANDLE WINAPI KERNEL32$GetProcessHeap();
 #define GetProcessHeap KERNEL32$GetProcessHeap
-
+WINBASEAPI int WINAPI KERNEL32$WideCharToMultiByte(UINT CodePage, DWORD dwFlags, LPCWCH lpWideCharStr, int cchWideChar, LPSTR lpMultiByteStr, int cbMultiByte, LPCCH lpDefaultChar, LPBOOL lpUsedDefaultChar);
+#define WideCharToMultiByte KERNEL32$WideCharToMultiByte
 
 
 // NTDLL
 DECLSPEC_IMPORT NTSTATUS WINAPI NTDLL$NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS SystemInformationClass,PVOID SystemInformation,ULONG SystemInformationLength,PULONG ReturnLength);
 #define NtQuerySystemInformation NTDLL$NtQuerySystemInformation
+
 
 // MSVCRT
 WINBASEAPI void* __cdecl MSVCRT$memcpy(void* __restrict__ _Dst, const void* __restrict__ _Src, size_t _MaxCount);
@@ -58,3 +62,20 @@ DECLSPEC_IMPORT void   __cdecl MSVCRT$free(void *);
 #define free MSVCRT$free
 WINBASEAPI int __cdecl MSVCRT$_wcsicmp(wchar_t *string1, wchar_t *string2);
 #define _wcsicmp MSVCRT$_wcsicmp
+
+
+// bcrypt
+WINBASEAPI NTSTATUS WINAPI BCRYPT$BCryptOpenAlgorithmProvider(BCRYPT_ALG_HANDLE *phAlgorithm, LPCWSTR pszAlgId, LPCWSTR pszImplementation, ULONG dwFlags);
+#define BCryptOpenAlgorithmProvider BCRYPT$BCryptOpenAlgorithmProvider
+
+WINBASEAPI NTSTATUS WINAPI BCRYPT$BCryptGenerateSymmetricKey(BCRYPT_ALG_HANDLE hAlgorithm, BCRYPT_KEY_HANDLE *phKey, PUCHAR pbKeyObject, ULONG cbKeyObject, PUCHAR pbSecret, ULONG cbSecret, ULONG dwFlags);
+#define BCryptGenerateSymmetricKey BCRYPT$BCryptGenerateSymmetricKey
+
+WINBASEAPI NTSTATUS WINAPI BCRYPT$BCryptDecrypt(BCRYPT_KEY_HANDLE hKey, PUCHAR pbInput, ULONG cbInput, VOID *pPaddingInfo, PUCHAR pbIV, ULONG cbIV, PUCHAR pbOutput, ULONG cbOutput, ULONG *pcbResult, ULONG dwFlags);
+#define BCryptDecrypt BCRYPT$BCryptDecrypt
+
+WINBASEAPI NTSTATUS WINAPI BCRYPT$BCryptCloseAlgorithmProvider(BCRYPT_ALG_HANDLE hAlgorithm, ULONG dwFlags);
+#define BCryptCloseAlgorithmProvider BCRYPT$BCryptCloseAlgorithmProvider
+
+WINBASEAPI NTSTATUS WINAPI BCRYPT$BCryptDestroyKey(BCRYPT_KEY_HANDLE hKey);
+#define BCryptDestroyKey BCRYPT$BCryptDestroyKey

@@ -29,7 +29,7 @@ BOOL QuerySuperfetchMemoryRanges(SUPERFETCH_INFORMATION* superfetchInfo, PPF_MEM
     NTSTATUS status = NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &returnLength);
     if (status != 0)
     {
-        BeaconPrintf(CALLBACK_OUTPUT, "NtQuerySystemInformation (SuperfetchMemoryRangesQuery) failed: %lx\n", GetLastError());
+        BeaconFormatPrintf(&outputbuffer, "NtQuerySystemInformation (SuperfetchMemoryRangesQuery) failed: %lx\n", GetLastError());
         return FALSE;
     }
 
@@ -68,7 +68,7 @@ BOOL BuildGlobalDatabase(SUPERFETCH_INFORMATION* superfetchInfo, PPF_MEMORY_RANG
         NTSTATUS status = NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &ResultLength);
         if (status != 0)
         {
-            BeaconPrintf(CALLBACK_OUTPUT, "NtQuerySystemInformation SuperfetchPfnQuery failed! Error: 0x%lx\n", GetLastError());
+            BeaconFormatPrintf(&outputbuffer, "NtQuerySystemInformation SuperfetchPfnQuery failed! Error: 0x%lx\n", GetLastError());
             return -1;
         }
 
@@ -107,7 +107,7 @@ size_t TotalRangePageCount = 0;
 
 BOOL CreateGlobalSuperfetchDatabase()
 {
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Creating Global Pfn Database...");
+    BeaconFormatPrintf(&outputbuffer, "[+] Creating Global Pfn Database...\n");
 
 
     // Step 1 - Call Superfetch the first time to get all the physical memory ranges
@@ -144,12 +144,12 @@ BOOL CreateGlobalSuperfetchDatabase()
 
 
     // Step 4 - Query each range to get detailed information such as the MMPFN_IDENTITY structure
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Building database...");
+    BeaconFormatPrintf(&outputbuffer, "[+] Building database...\n");
     pGlobalTranslationInfo = (PTRANSLATION_INFORMATION)pGlobalTranslationInformationBuffer;
     BuildGlobalDatabase(&superfetchInfo, &info, &pGlobalTranslationInfo);
 
 
-    BeaconPrintf(CALLBACK_OUTPUT, "[+] Finished building database!");
+    BeaconFormatPrintf(&outputbuffer, "[+] Finished building database!\n");
 
     return TRUE;
 }
@@ -199,7 +199,7 @@ BOOL TranslateUVA2Physical(DWORD64 VirtualAddress, DWORD64* PhysicalAddress, DWO
 {
     if (TargetUniqueProcessKey == 0 || TargetPID == 0)
     {
-        BeaconPrintf(CALLBACK_OUTPUT, "Did not pass in target UniqueProcessKey or PID!\n");
+        BeaconFormatPrintf(&outputbuffer, "Did not pass in target UniqueProcessKey or PID!\n");
         return FALSE;
     }
 

@@ -1,5 +1,5 @@
 #include <windows.h>
-#include <winternl.h>
+//#include <winternl.h>
 
 typedef struct _CUSTOM_SYSTEM_PROCESS_INFORMATION {
     ULONG NextEntryOffset;
