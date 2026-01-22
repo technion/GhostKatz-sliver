@@ -13,19 +13,19 @@ Run `make` to compile the BOFs.
 
 Load the `ghostkatz.cna` Aggressor Script into your Script Manager.
 
-To run GhostKatz, use the command `ghostkatz -prv <provider id> [logonpasswords/wdigest]`.
+To run GhostKatz, use the command `ghostkatz [logonpasswords/wdigest] -prv <provider id>`.
 
 You can run the help command in your Beacon console with: `help ghostkatz`.
 
 ```
 beacon> help ghostkatz
-Synopsis: ghostkatz -prv <provider id> [logonpasswords/wdigest]
+Synopsis: ghostkatz [logonpasswords/wdigest] -prv <provider id>
 Description:
   Dump credentials from LSASS by using signed kernel drivers to read physical memory.
 
 Examples:
-  ghostkatz -prv 1 logonpasswords
-  ghostkatz -prv 2 wdigest
+  ghostkatz logonpasswords -prv 1
+  ghostkatz wdigest
 ```
 
 ## Providers
@@ -38,7 +38,7 @@ Drivers that can be exploited with GhostKatz
 | 2  | TechPowerUp        | ThrottleStop   | 16f83f056177c4ec24c7e99d01ca9d9d6713bd0497eeedb777a3ffefa99c97f0 | No              |
 | 3  | Lenovo             | LnvMSRIO       | 245b6ab442a7d53dc30ece28e1c6de727c019669385877cbe929b81aa1a2ad2f | No              |
 
-###### * At commit time. May be inaccurate.
+###### * Blacklist state set at commit time. May be inaccurate.
 
 
 ## Resources
