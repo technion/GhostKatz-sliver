@@ -273,7 +273,7 @@ BOOL PrintHex(unsigned char* ByteArray, int ByteArraySize)
     for (int i = 0; i < ByteArraySize; i++)
     {
         // printf("%02x", (unsigned char*)ByteArray[i]);
-        BeaconFormatPrintf(&outputbuffer, "%02x", (unsigned char*)ByteArray[i]);
+        BeaconFormatPrintf(&outputbuffer, "%02x", (unsigned int)ByteArray[i]);
     }
     BeaconFormatPrintf(&outputbuffer, "\n");
 

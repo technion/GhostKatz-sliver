@@ -73,7 +73,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
         BeaconFormatPrintf(&outputbuffer, "[%04d] Flink Base Address : 0x%llx\n", i, Flink);
 
         wchar_t* UserNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + 0x30, lower32bits, LsassPID);
-        if (*UserNameWideString == NULL)
+        if (UserNameWideString == NULL || *UserNameWideString == L'\0')
             UserNameWideString = L"(null)";
 
         char UserNameString[MAX_PATH];
@@ -89,7 +89,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
 
 
         wchar_t* DomainNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + 0x40, lower32bits, LsassPID);
-        if (*DomainNameWideString == NULL)
+        if (DomainNameWideString == NULL || *DomainNameWideString == L'\0')
             DomainNameWideString = L"(null)";
 
         char DomainNameString[MAX_PATH];

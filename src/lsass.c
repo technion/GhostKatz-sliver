@@ -10,8 +10,8 @@ DWORD64 GetDataSectionOffset(char* TargetModule)
 {
     HMODULE hModule = GetModuleHandleA(TargetModule);
     PIMAGE_DOS_HEADER pImgDosHdr = (PIMAGE_DOS_HEADER)hModule;
-    PIMAGE_NT_HEADERS pImgNtHdr = (PIMAGE_NT_HEADERS)((DWORD64)hModule + pImgDosHdr->e_lfanew);
-    PIMAGE_SECTION_HEADER pImgSectionHdr = (PIMAGE_SECTION_HEADER)((DWORD64)pImgNtHdr + sizeof(IMAGE_NT_HEADERS));
+    PIMAGE_NT_HEADERS pImgNtHdr = (PIMAGE_NT_HEADERS)((BYTE*)hModule + pImgDosHdr->e_lfanew);
+    PIMAGE_SECTION_HEADER pImgSectionHdr = (PIMAGE_SECTION_HEADER)((BYTE*)pImgNtHdr + sizeof(IMAGE_NT_HEADERS));
 
     for (int i = 0; i < pImgNtHdr->FileHeader.NumberOfSections; i++)
     {
@@ -21,7 +21,7 @@ DWORD64 GetDataSectionOffset(char* TargetModule)
             FreeLibrary(hModule);
             return Offset;
         }
-        pImgSectionHdr = (DWORD64)pImgSectionHdr + sizeof(IMAGE_SECTION_HEADER);
+        pImgSectionHdr = (PIMAGE_SECTION_HEADER)((BYTE*)pImgSectionHdr + sizeof(IMAGE_SECTION_HEADER));
     }
 
     FreeLibrary(hModule);
@@ -127,7 +127,7 @@ unsigned char* RetrieveBCryptKey(HANDLE hFile, DWORD64 bCryptHandleKey, DWORD lo
             BYTE KeyLength;
             ReadByte(hFile, BcryptKey81PA + 0x38, &KeyLength);
 
-            if (KeyLength != NULL)
+            if (KeyLength != 0)
             {
                 unsigned char* RealDecryptionKey = ReadMultipleBytes(hFile, KeyLength, BcryptKey81PA + 0x38 + 4, TRUE);
                 *ReturnKeySize = KeyLength;
