@@ -2,6 +2,7 @@
 #define SE_PROF_SINGLE_PROCESS_PRIVILEGE 13L
 
 // utils.c
+BOOL isServiceInstalled(int provId);
 BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue);
 BOOL WriteByte(HANDLE hFile, ULONG_PTR PhysicalAddress, BYTE WriteValue);
 BOOL EnablePrivilege(ULONG priv);

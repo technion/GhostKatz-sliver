@@ -5,13 +5,18 @@
 #include "superfetch.h"
 #include "defs.h"
 
+// DFR
+typedef BOOL(NTAPI* fnEnumDeviceDrivers)(LPVOID *lpImageBase,DWORD cb,LPDWORD lpcbNeeded);
+
 static PVOID lpImageBase[2048]; // Move lpImageBase off the stack to avoid '___chkstk_ms' error
 DWORD64 GetNtKernelVirtualAddresses(void)
 {
+    fnEnumDeviceDrivers pEnumDeviceDrivers = (fnEnumDeviceDrivers)GetProcAddress(GetModuleHandleA("psapi.dll"), "EnumDeviceDrivers");
+
     DWORD cb = 2048;
     DWORD lpcbNeeded;
 
-    BOOL bResult = EnumDeviceDrivers(lpImageBase, cb, &lpcbNeeded);
+    BOOL bResult = pEnumDeviceDrivers(lpImageBase, cb, &lpcbNeeded);
     if (!bResult)
     {
         BeaconFormatPrintf(&outputbuffer, "Error when calling EnumDeviceDrivers: 0x%lx\n", GetLastError());

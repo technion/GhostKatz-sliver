@@ -5,20 +5,10 @@
 extern formatp outputbuffer;
 
 // ADVAPI32
-WINADVAPI SC_HANDLE WINAPI ADVAPI32$OpenSCManagerA(LPCSTR lpMachineName,LPCSTR lpDatabaseName,DWORD dwDesiredAccess);
-#define OpenSCManagerA ADVAPI32$OpenSCManagerA
-WINADVAPI SC_HANDLE WINAPI ADVAPI32$OpenServiceA(SC_HANDLE hSCManager,LPCSTR lpServiceName,DWORD dwDesiredAccess);
-#define OpenServiceA ADVAPI32$OpenServiceA
-WINADVAPI SC_HANDLE WINAPI ADVAPI32$CreateServiceA(SC_HANDLE hSCManager,LPCSTR lpServiceName,LPCSTR lpDisplayName,DWORD dwDesiredAccess,DWORD dwServiceType,DWORD dwStartType,DWORD dwErrorControl,LPCSTR lpBinaryPathName,LPCSTR lpLoadOrderGroup,LPDWORD lpdwTagId,LPCSTR lpDependencies,LPCSTR lpServiceStartName,LPCSTR lpPassword);
-#define CreateServiceA ADVAPI32$CreateServiceA
 WINADVAPI LONG WINAPI ADVAPI32$RegGetValueA(HKEY hkey,LPCSTR lpSubKey,LPCSTR lpValue,DWORD dwFlags,LPDWORD pdwType,PVOID pvData,LPDWORD pcbData);
 #define RegGetValueA ADVAPI32$RegGetValueA
 DECLSPEC_IMPORT BOOL WINAPI KERNEL32$CloseHandle(HANDLE);
 #define CloseHandle KERNEL32$CloseHandle
-DECLSPEC_IMPORT BOOL WINAPI KERNEL32$DeviceIoControl(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
-#define DeviceIoControl KERNEL32$DeviceIoControl
-DECLSPEC_IMPORT BOOL WINAPI PSAPI$EnumDeviceDrivers(LPVOID *lpImageBase,DWORD cb,LPDWORD lpcbNeeded);
-#define EnumDeviceDrivers PSAPI$EnumDeviceDrivers
 
 
 // KERNEL32
@@ -62,6 +52,8 @@ DECLSPEC_IMPORT void   __cdecl MSVCRT$free(void *);
 #define free MSVCRT$free
 WINBASEAPI int __cdecl MSVCRT$_wcsicmp(wchar_t *string1, wchar_t *string2);
 #define _wcsicmp MSVCRT$_wcsicmp
+WINBASEAPI int __cdecl MSVCRT$sprintf(char* __stream, const char* __format, ...);
+#define sprintf MSVCRT$sprintf
 
 
 // bcrypt
