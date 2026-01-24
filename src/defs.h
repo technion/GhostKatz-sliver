@@ -26,7 +26,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
 
 // lsass.c
 DWORD64 GetDataSectionOffset(char* TargetModule);
-BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion);
+BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials);
 
 // lsass_getkeys.c
 BOOL SearchForCredentialKeys(char* pvWindowsVersion, DWORD64* hAesKeyAddress, DWORD64* h3DesKeyAddress, DWORD64* IVAddress);

