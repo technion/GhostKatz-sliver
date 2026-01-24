@@ -189,7 +189,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
                 {
                     // The crypto blob is the MSV1_0_PRIMARY_CREDENTIAL_10_1607 struct here towards the bottom https://whoamianony.top/posts/sekurlsa-how-to-dump-user-login-credentials-from-msv1_0/#3-%E6%89%93%E5%8D%B0%E7%99%BB%E5%BD%95%E4%BC%9A%E8%AF%9D%E4%BF%A1%E6%81%AF
                     unsigned char* cryptoBlob = ReadMultipleBytes(hFile, Credentials_CryptoBlob_Length, tmpPA, TRUE);
-
+                    
                     NTSTATUS status;
                     ULONG cbResult = 0;
                     BCRYPT_ALG_HANDLE hAlgorithm = NULL;
