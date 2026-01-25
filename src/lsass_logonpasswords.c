@@ -229,6 +229,11 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
                             BeaconFormatPrintf(&outputbuffer, "Error in BCryptOpenAlgorithmProvider: 0x%lx\n", status);
                         }
                     }
+                    else 
+                    {
+                        BeaconFormatPrintf(&outputbuffer, "\t    * Crypto blob: ");
+                        PrintHex(cryptoBlob, Credentials_CryptoBlob_Length);
+                    }
                     status = BCryptCloseAlgorithmProvider(hAlgorithm, 0);
                     status = BCryptDestroyKey(hKey);
                     free(bOutput);
