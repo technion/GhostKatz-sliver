@@ -54,7 +54,6 @@ DWORD GetTargetProcessInformation(PWSTR TargetProcess)
         // Make the call to get the process information
         status = NtQuerySystemInformation(SystemProcessInformation, buffer, len, &len);
 
-        // If the call was successful, break out of the loop
         if (NT_SUCCESS(status))
         {
             break;
