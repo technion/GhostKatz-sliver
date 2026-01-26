@@ -22,7 +22,7 @@ DWORD64 GetDataSectionBase(DWORD64 ImageStartAddress, DWORD64 ImageEndAddress, D
 
 // eprocess.c
 DWORD64 GetNtEprocessAddress(HANDLE hFile);
-DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA);
+DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, char* pvWindowsVersion);
 
 // lsass.c
 DWORD64 GetDataSectionOffset(char* TargetModule);

