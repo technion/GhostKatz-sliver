@@ -30,17 +30,24 @@ char* GetWinBuildNumber()
     return g_BuildStr;
 }
 
-char* GetWinVersion()
+BOOL GetWinVersion(char* pvWindowsVersion, int size)
 {
-    static char pvWindowsVersion[32] = { 0 };
-    DWORD cbData = 32;
-    if (RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion", RRF_RT_REG_SZ, NULL, pvWindowsVersion, &cbData) != ERROR_SUCCESS)
+    LSTATUS status;
+    DWORD cbData = size;
+    status = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion", RRF_RT_REG_SZ, NULL, pvWindowsVersion, &cbData);
+    if (status == ERROR_FILE_NOT_FOUND)
     {
-        BeaconFormatPrintf(&outputbuffer, "Failed to get Windows version!\n");
-        return -1;
+        cbData = size;
+        status = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId", RRF_RT_REG_SZ, NULL, pvWindowsVersion, &cbData);
     }
 
-    return pvWindowsVersion;
+    if (status != ERROR_SUCCESS)
+    {
+        BeaconFormatPrintf(&outputbuffer, "Failed to get Windows version!\n");
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 BOOL WriteByte(HANDLE hFile, ULONG_PTR PhysicalAddress, BYTE WriteValue)

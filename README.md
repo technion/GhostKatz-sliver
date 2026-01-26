@@ -45,7 +45,7 @@ Drivers that can be exploited with GhostKatz
 * [Outflank - Mapping Virtual to Physical Addresses Using Superfetch](https://www.outflank.nl/blog/2023/12/14/mapping-virtual-to-physical-adresses-using-superfetch/)
 * [Physical Graffiti Lsass](https://adepts.of0x.cc/physical-graffiti-lsass/)
 * [Dumping LSASS with WinDBG and PyKD](https://www.matteomalvica.com/blog/2020/01/20/mimikatz-lsass-dump-windg-pykd/)
-* [Mimkatz structures](https://github.com/gentilkiwi/mimikatz/blob/master/mimikatz/modules/sekurlsa/kuhl_m_sekurlsa_utils.h)
+* Mimkatz [structures](https://github.com/gentilkiwi/mimikatz/blob/master/mimikatz/modules/sekurlsa/kuhl_m_sekurlsa_utils.h), [key offsets](https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/crypto/kuhl_m_sekurlsa_nt6.c)
 * [Dumping MSV1 logon credentials](https://whoamianony.top/posts/sekurlsa-how-to-dump-user-login-credentials-from-msv1_0/#3-%E6%89%93%E5%8D%B0%E7%99%BB%E5%BD%95%E4%BC%9A%E8%AF%9D%E4%BF%A1%E6%81%AF)
 * [XPN Exploring Mimikatz WDigest](https://blog.xpnsec.com/exploring-mimikatz-part-1/)
 

