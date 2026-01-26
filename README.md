@@ -1,5 +1,5 @@
 # GhostKatz
-Dump LSASS credentials from physical memory by exploiting signed vulnerable drivers exposing physical memory read primitives via `MmMapIoSpace`.
+Extract LSASS credentials directly from physical memory by abusing signed vulnerable drivers with physical memory read primitives via `MmMapIoSpace`, bypassing traditional user-mode detection capabilities.
 
 This tool was developed in collaboration between [Julian Peña](https://github.com/RainbowDynamix) and [Eric Esquivel](https://github.com/EricEsquivel).
 
