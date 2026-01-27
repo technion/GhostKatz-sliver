@@ -29,7 +29,7 @@ BOOL QuerySuperfetchMemoryRanges(SUPERFETCH_INFORMATION* superfetchInfo, PPF_MEM
     NTSTATUS status = NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &returnLength);
     if (status != 0)
     {
-        BeaconFormatPrintf(&outputbuffer, "NtQuerySystemInformation (SuperfetchMemoryRangesQuery) failed: %lx\n", GetLastError());
+        BeaconFormatPrintf(&outputbuffer, "[!] NtQuerySystemInformation (SuperfetchMemoryRangesQuery) failed: %lx\n", status);
         return FALSE;
     }
 
@@ -68,8 +68,8 @@ BOOL BuildGlobalDatabase(SUPERFETCH_INFORMATION* superfetchInfo, PPF_MEMORY_RANG
         NTSTATUS status = NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &ResultLength);
         if (status != 0)
         {
-            BeaconFormatPrintf(&outputbuffer, "NtQuerySystemInformation SuperfetchPfnQuery failed! Error: 0x%lx\n", GetLastError());
-            return -1;
+            BeaconFormatPrintf(&outputbuffer, "[!] NtQuerySystemInformation SuperfetchPfnQuery failed! Error: 0x%lx\n", status);
+            return FALSE;
         }
 
         // Allocate temporary buffer that will store the Translation Information for each range individually
@@ -120,7 +120,7 @@ BOOL CreateGlobalSuperfetchDatabase()
 
     BOOL bResult = QuerySuperfetchMemoryRanges(&superfetchInfo, &info); // Use SuperfetchMemoryRangesQuery
     if (!bResult)
-        return -1;
+        return FALSE;
 
     // Optionally print out their information
     //PrintRangesV2(info); 
@@ -146,7 +146,9 @@ BOOL CreateGlobalSuperfetchDatabase()
     // Step 4 - Query each range to get detailed information such as the MMPFN_IDENTITY structure
     BeaconFormatPrintf(&outputbuffer, "[+] Building database...\n");
     pGlobalTranslationInfo = (PTRANSLATION_INFORMATION)pGlobalTranslationInformationBuffer;
-    BuildGlobalDatabase(&superfetchInfo, &info, &pGlobalTranslationInfo);
+    bResult = BuildGlobalDatabase(&superfetchInfo, &info, &pGlobalTranslationInfo);
+    if (!bResult)
+        return FALSE;
 
 
     BeaconFormatPrintf(&outputbuffer, "[+] Finished building database!\n");
