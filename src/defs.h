@@ -1,6 +1,11 @@
 // Privileges
 #define SE_PROF_SINGLE_PROCESS_PRIVILEGE 13L
 
+// NTSTATUS
+#ifndef STATUS_BUFFER_TOO_SMALL
+#define STATUS_BUFFER_TOO_SMALL 0xC0000023
+#endif
+
 // utils.c
 BOOL isServiceInstalled(int provId);
 BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue);
@@ -14,7 +19,7 @@ BOOL PrintHex(unsigned char* ByteArray, int ByteArraySize);
 DWORD SearchPattern(unsigned char* mem, DWORD NumOfBytesToSearch, unsigned char* signature, DWORD signatureLen);
 
 // superfetch.c
-BOOL CreateGlobalSuperfetchDatabase();
+BOOL CreateGlobalSuperfetchDatabase(BOOL use_PF_MEMORYRANGEINFO_V2);
 BOOL TranslateV2P(DWORD64 VirtualAddress, DWORD64* PhysicalAddress);
 BOOL TranslateUVA2Physical(DWORD64 VirtualAddress, DWORD64* PhysicalAddress, DWORD TargetUniqueProcessKey, DWORD TargetPID);
 BOOL TranslateP2V(DWORD64 PhysicalAddress, DWORD64* VirtualAddress);

@@ -141,9 +141,11 @@ int go(char *args, int argLen)
         return FALSE;
     }
 
+    // TEMPORARY
+    BOOL use_PF_MEMORYRANGEINFO_V2 = FALSE;
 
     // Create Superfetch Database
-    if (!CreateGlobalSuperfetchDatabase())
+    if (!CreateGlobalSuperfetchDatabase(use_PF_MEMORYRANGEINFO_V2))
     {
         if (!removeService(provider))
         {

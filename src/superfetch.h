@@ -231,6 +231,13 @@ typedef struct _PF_PHYSICAL_MEMORY_RANGE {
     ULONG_PTR PageCount;
 } PF_PHYSICAL_MEMORY_RANGE, * PPF_PHYSICAL_MEMORY_RANGE;
 
+// For Windows 1803 and earlier
+typedef struct _PF_MEMORY_RANGE_INFO_V1 {
+    ULONG Version;                     // set to 1
+    ULONG RangeCount;
+    PF_PHYSICAL_MEMORY_RANGE Ranges[ANYSIZE_ARRAY];
+} PF_MEMORY_RANGE_INFO_V1, * PPF_MEMORY_RANGE_INFO_V1;
+
 // Version 2 range info (8-byte aligned)
 typedef struct _PF_MEMORY_RANGE_INFO_V2 {
     ULONG version;       // set to 2 (we set this when we passed this struct in)
