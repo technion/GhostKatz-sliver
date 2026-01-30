@@ -43,6 +43,7 @@ Drivers that can be exploited with GhostKatz
 
 ## Resources
 * [Outflank - Mapping Virtual to Physical Addresses Using Superfetch](https://www.outflank.nl/blog/2023/12/14/mapping-virtual-to-physical-adresses-using-superfetch/)
+* [UnknownCheats - [Information] NtQuerySystemInformation SystemSuperfetchInformation by Midi12](https://www.unknowncheats.me/forum/general-programming-and-reversing/397104-ntquerysysteminformation-systemsuperfetchinformation.html)
 * [Physical Graffiti Lsass](https://adepts.of0x.cc/physical-graffiti-lsass/)
 * [Dumping LSASS with WinDBG and PyKD](https://www.matteomalvica.com/blog/2020/01/20/mimikatz-lsass-dump-windg-pykd/)
 * Mimkatz [structures](https://github.com/gentilkiwi/mimikatz/blob/master/mimikatz/modules/sekurlsa/kuhl_m_sekurlsa_utils.h), [key offsets](https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/crypto/kuhl_m_sekurlsa_nt6.c)
