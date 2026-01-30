@@ -52,6 +52,8 @@ WINBASEAPI int WINAPI KERNEL32$WideCharToMultiByte(UINT CodePage, DWORD dwFlags,
 DECLSPEC_IMPORT NTSTATUS WINAPI NTDLL$NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS SystemInformationClass,PVOID SystemInformation,ULONG SystemInformationLength,PULONG ReturnLength);
 #define NtQuerySystemInformation NTDLL$NtQuerySystemInformation
 
+WINBASEAPI VOID WINAPI NTDLL$RtlGetNtVersionNumbers(DWORD *MajorVersion, DWORD *MinorVersion, DWORD *BuildNumber);
+#define RtlGetNtVersionNumbers NTDLL$RtlGetNtVersionNumbers
 
 // MSVCRT
 WINBASEAPI void* __cdecl MSVCRT$memcpy(void* __restrict__ _Dst, const void* __restrict__ _Src, size_t _MaxCount);

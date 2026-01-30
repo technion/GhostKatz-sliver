@@ -5,51 +5,6 @@
 #include "defs.h"
 
 
-char* GetWinBuildNumber()
-{
-    static char g_BuildStr[32];  // persists after return
-    DWORD cbData = sizeof(g_BuildStr);
-    g_BuildStr[0] = '\0';
-
-    LONG st = RegGetValueA(
-        HKEY_LOCAL_MACHINE,
-        "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
-        "CurrentBuildNumber",
-        RRF_RT_REG_SZ,
-        NULL,
-        (PVOID)g_BuildStr,
-        &cbData
-    );
-
-    if (st != ERROR_SUCCESS) 
-    {
-        BeaconFormatPrintf(&outputbuffer, "Failed to get Windows build number (err=%ld)\n", st);
-        return NULL;
-    }
-
-    return g_BuildStr;
-}
-
-BOOL GetWinVersion(char* pvWindowsVersion, int size)
-{
-    LSTATUS status;
-    DWORD cbData = size;
-    status = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion", RRF_RT_REG_SZ, NULL, pvWindowsVersion, &cbData);
-    if (status == ERROR_FILE_NOT_FOUND)
-    {
-        cbData = size;
-        status = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId", RRF_RT_REG_SZ, NULL, pvWindowsVersion, &cbData);
-    }
-
-    if (status != ERROR_SUCCESS)
-    {
-        BeaconFormatPrintf(&outputbuffer, "Failed to get Windows version!\n");
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
 BOOL WriteByte(HANDLE hFile, ULONG_PTR PhysicalAddress, BYTE WriteValue)
 {
     typedef BOOL(NTAPI* fnDeviceIoControl)(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);

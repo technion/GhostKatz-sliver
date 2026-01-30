@@ -135,13 +135,9 @@ BOOL CreateGlobalSuperfetchDatabase()
         size_t pageCount = range->PageCount;                     // How many pages are in the range
         TotalRangePageCount += pageCount;
     }
-    //DEBUG_PRINT("Total Number of pages: %llu\n", TotalRangePageCount);
-
 
     // Step 3 - Allocate global database buffer
     PVOID pGlobalTranslationInformationBuffer = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, TotalRangePageCount * sizeof(TRANSLATION_INFORMATION));
-    //DEBUG_PRINT("Allocated %llu sized buffer!\n", TotalRangePageCount * sizeof(TRANSLATION_INFORMATION));
-
 
     // Step 4 - Query each range to get detailed information such as the MMPFN_IDENTITY structure
     BeaconFormatPrintf(&outputbuffer, "[+] Building database...\n");
@@ -166,10 +162,8 @@ BOOL TranslateV2P(DWORD64 VirtualAddress, DWORD64* PhysicalAddress)
         {
             DWORD64 PageVA = pGlobalTranslationInfo[i].PageVirtualAddress;
             DWORD64 PagePA = pGlobalTranslationInfo[i].PagePhysicalAddress;
-            //printf("[Page Info] VA=0x%llx -> PA=0x%llx\n", PageVA, PagePA);
 
             *PhysicalAddress = PagePA + (VirtualAddress - (DWORD64)PageVA);
-            //printf("[Translation Info] VA: 0x%llx -> PA: 0x%llx\n", VirtualAddress, *PhysicalAddress);
 
             return TRUE;
         }
@@ -188,7 +182,6 @@ BOOL TranslateP2V(DWORD64 PhysicalAddress, DWORD64* VirtualAddress)
             DWORD64 PagePA = pGlobalTranslationInfo[i].PagePhysicalAddress;
 
             *VirtualAddress = PageVA + (PhysicalAddress - (DWORD64)PagePA);
-            //printf("PA: 0x%llx -> VA: 0x%llx\n", PhysicalAddress, *VirtualAddress);
 
             return TRUE;
         }
@@ -197,6 +190,7 @@ BOOL TranslateP2V(DWORD64 PhysicalAddress, DWORD64* VirtualAddress)
     return FALSE;
 }
 
+// The TargetUniqueProcessKey is the lower32bits of the EPROCESS address
 BOOL TranslateUVA2Physical(DWORD64 VirtualAddress, DWORD64* PhysicalAddress, DWORD TargetUniqueProcessKey, DWORD TargetPID)
 {
     if (TargetUniqueProcessKey == 0 || TargetPID == 0)
@@ -216,11 +210,9 @@ BOOL TranslateUVA2Physical(DWORD64 VirtualAddress, DWORD64* PhysicalAddress, DWO
             {
                 DWORD64 PageVA = pGlobalTranslationInfo[i].PageVirtualAddress;
                 DWORD64 PagePA = pGlobalTranslationInfo[i].PagePhysicalAddress;
-                //printf("[Page Info] VA: 0x%llx -> PA: 0x%llx\n", PageVA, PagePA);
 
                 // Add offset from page to get address
                 *PhysicalAddress = PagePA + (VirtualAddress - (DWORD64)PageVA);
-                //printf("[Target Info] VA: 0x%llx -> PA: 0x%llx\n", VirtualAddress, *PhysicalAddress);
 
                 return TRUE;
             }
