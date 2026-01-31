@@ -133,9 +133,13 @@ int go(char *args, int argLen)
         return FALSE;
     }
 
-    // TEMPORARY
-    BOOL use_PF_MEMORYRANGEINFO_V2 = FALSE;
 
+    BOOL use_PF_MEMORYRANGEINFO_V2 = TRUE;
+
+    if (NT_BUILD_NUMBER < KULL_M_WIN_BUILD_10_1803)  // https://www.unknowncheats.me/forum/general-programming-and-reversing/397104-ntquerysysteminformation-systemsuperfetchinformation.html
+        use_PF_MEMORYRANGEINFO_V2 = FALSE;
+
+        
     // Create Superfetch Database
     if (!CreateGlobalSuperfetchDatabase(use_PF_MEMORYRANGEINFO_V2))
     {

