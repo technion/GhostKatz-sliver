@@ -6,9 +6,6 @@
 #include "defs.h"
 
 
-<<<<<<< HEAD
-BOOL WriteByte(HANDLE hFile, ULONG_PTR PhysicalAddress, BYTE WriteValue)
-=======
 char* GetWinBuildNumber()
 {
     static char g_BuildStr[32];  // persists after return
@@ -55,7 +52,6 @@ BOOL GetWinVersion(char* pvWindowsVersion, int size)
 }
 
 BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue, int provId)
->>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
 {
     typedef BOOL(NTAPI* fnDeviceIoControl)(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
     fnDeviceIoControl pDeviceIoControl = (fnDeviceIoControl)GetProcAddress(GetModuleHandleA("kernel32.dll"), "DeviceIoControl");

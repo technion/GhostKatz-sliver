@@ -63,11 +63,7 @@ DWORD64 GetNtEprocessAddress(HANDLE hFile, int provId)
     return NtEprocessVirtualAddress;
 }
 
-<<<<<<< HEAD
-DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, DWORD dBuildNumber)
-=======
-DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, char* pvWindowsVersion, int provId)
->>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
+DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, DWORD dBuildNumber, int provId)
 {
     int ActiveProcessLinksOffset = 0;
 

