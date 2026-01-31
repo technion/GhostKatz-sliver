@@ -4,10 +4,23 @@ PROVIDER_INFO providers[] = {
     {
         .id = PROVIDER_TPWSAV,
         .read_ioctl = 0x2220C8,
-        .write_ioctl = 0x2220CC,
         .device_name = L"\\\\.\\EBIoDispatch",
         .service_name = "TPwSav",
         .driver_filename = "tpwsav.sys"
+    },
+    {
+        .id = PROVIDER_THROTTLESTOP,
+        .read_ioctl = 0x80006498,
+        .device_name = L"\\\\.\\ThrottleStop",
+        .service_name = "ThrottleStop",
+        .driver_filename = "throttlestop.sys"
+    },
+    {
+        .id = PROVIDER_LNVMSRIO,
+        .read_ioctl = 0x9C406104,
+        .device_name = L"\\\\.\\WinMsrDev",
+        .service_name = "LnvMSRIO",
+        .driver_filename = "lnvmsrio.sys"
     }
     // Add more providers here as needed
 };

