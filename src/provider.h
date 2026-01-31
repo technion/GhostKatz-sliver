@@ -4,13 +4,14 @@
 #include <windows.h>
 
 // Provider IDs
-#define PROVIDER_TPWSAV 1
+#define PROVIDER_TPWSAV             1
+#define PROVIDER_THROTTLESTOP       2
+#define PROVIDER_LNVMSRIO           3
 
 // Provider information structure
 typedef struct _PROVIDER_INFO {
     int id;
     DWORD read_ioctl;
-    DWORD write_ioctl;
     LPCWSTR device_name;
     char* service_name;
     char* driver_filename;
