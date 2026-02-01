@@ -80,7 +80,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
 
     if (ActiveProcessLinksOffset == 0)
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to get correct offsets for the Windows version!\n");
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to get correct ActiveProcessLinks offset for the current Windows version!\n");
         return 0;
     }
 
