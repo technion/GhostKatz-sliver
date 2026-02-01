@@ -53,12 +53,6 @@ alias ghostkatz {
 		bcd($1, $drvBasePath);
 		bupload($1, $drvFile);
 	}
-	else if ($providerNum == 3)
-	{
-		$drvFile = script_resource("drivers/lnvmsrio.sys");
-		bcd($1, $drvBasePath);
-		bupload($1, $drvFile);
-	}
 	else if ($providerNum is $null)
 	{
 		$drvFile = script_resource("drivers/tpwsav.sys");

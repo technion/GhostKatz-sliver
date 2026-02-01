@@ -14,13 +14,6 @@ PROVIDER_INFO providers[] = {
         .device_name = L"\\\\.\\ThrottleStop",
         .service_name = "ThrottleStop",
         .driver_filename = "throttlestop.sys"
-    },
-    {
-        .id = PROVIDER_LNVMSRIO,
-        .read_ioctl = 0x9C406104,
-        .device_name = L"\\\\.\\WinMsrDev",
-        .service_name = "LnvMSRIO",
-        .driver_filename = "lnvmsrio.sys"
     }
     // Add more providers here as needed
 };

@@ -53,34 +53,6 @@ BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue)
             break;
         }
 
-        case PROVIDER_LNVMSRIO:
-        {
-            typedef struct _LNVMSRIO_PHYSICAL_READ_REQUEST {
-                UINT64 PhysicalAddress;
-                DWORD  OperationWidth;   
-                DWORD  NumBytes;            
-            } LNVMSRIO_PHYSICAL_READ_REQUEST;
-
-            LNVMSRIO_PHYSICAL_READ_REQUEST request = { 0 };
-            BYTE outputByte = 0;
-
-            request.PhysicalAddress = (UINT64)PhysicalAddress;
-            request.OperationWidth = 1;
-            request.NumBytes = 1;      
-
-            result = pDeviceIoControl(hFile, 
-                                     prov_info->read_ioctl, 
-                                     &request, sizeof(request), 
-                                     &outputByte, sizeof(outputByte), 
-                                     &bytesReturned, NULL);
-
-            if (result && bytesReturned >= 1) {
-                *ReadValue = outputByte;
-                return TRUE;
-            }
-            break;
-        }
-
         default:
             return FALSE;
     }
