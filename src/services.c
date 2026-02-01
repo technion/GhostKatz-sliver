@@ -6,7 +6,7 @@
 #include "services.h"
 
 
-BOOL isServiceInstalled(int provId)
+BOOL isServiceInstalled(void)
 {
     fnOpenSCManagerA pOpenSCManagerA = (fnOpenSCManagerA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenSCManagerA");
     fnOpenServiceA pOpenServiceA = (fnOpenServiceA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenServiceA");
@@ -15,7 +15,7 @@ BOOL isServiceInstalled(int provId)
     fnStartServiceA pStartServiceA = (fnStartServiceA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "StartServiceA");
     fnCloseServiceHandle pCloseServiceHandle = (fnCloseServiceHandle)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "CloseServiceHandle");
 
-    PROVIDER_INFO* prov_info = GetProviderInfo(provId);
+    PROVIDER_INFO* prov_info = GetProviderInfo(provider);
 
     const char* drvBasePath = "C:\\Windows\\System32\\drivers\\";
     const char* drvName = prov_info->service_name;
@@ -102,7 +102,7 @@ BOOL isServiceInstalled(int provId)
     return TRUE;
 }
 
-BOOL removeService(int provId)
+BOOL removeService(void)
 {
     fnOpenSCManagerA pOpenSCManagerA = (fnOpenSCManagerA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenSCManagerA");
     fnOpenServiceA pOpenServiceA = (fnOpenServiceA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenServiceA");
@@ -110,7 +110,7 @@ BOOL removeService(int provId)
     fnControlService pControlService = (fnControlService)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "ControlService");
     fnDeleteService pDeleteService = (fnDeleteService)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "DeleteService");
 
-    PROVIDER_INFO* prov_info = GetProviderInfo(provId);
+    PROVIDER_INFO* prov_info = GetProviderInfo(provider);
 
     const char* drvBasePath = "C:\\Windows\\System32\\drivers\\";
     const char* drvName = prov_info->service_name;

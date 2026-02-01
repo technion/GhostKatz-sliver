@@ -3,6 +3,8 @@
 
 // so every file in the program can access the beacon output buffer
 extern formatp outputbuffer;
+// global provider ID set by main
+extern int provider;
 
 // PSAPI
 DECLSPEC_IMPORT BOOL WINAPI PSAPI$EnumDeviceDrivers(LPVOID *lpImageBase,DWORD cb,LPDWORD lpcbNeeded);

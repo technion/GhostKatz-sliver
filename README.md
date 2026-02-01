@@ -28,15 +28,30 @@ Examples:
   ghostkatz wdigest
 ```
 
+## Tested Windows Versions
+These are simply the versions we manually stress tested. Major versions such as 1607 should not have breaking changes across minor build updates.
+- Windows Server 2016 
+  - Version 1607 (OS Build: 14393.693)
+- Windows Server 2019 
+  - Version 1809 (OS Build: 17763.3650)
+- Windows 10 
+  - Version 21H2 (OS Build: 19044.6809)
+  - Version 22H2 (OS Build: 19045.6466)
+- Windows Server 2022
+  - Version 21H2 (OS Build: 20348.587)
+
+> [!WARNING]
+> While GhostKatz has been tested thoroughly, you should use discretion if deploying in production. GhostKatz leverages vulnerable kernel drivers. It is possible errors may result in a BSOD.
+
 ## Providers
 
 Drivers that can be exploited with GhostKatz
 
-| Id | Vendor             | Driver Name    | SHA256                                                           | Blacklisted?    |
-|----|--------------------|----------------|------------------------------------------------------------------|-----------------|
-| 1  | Toshiba            | TPwSav         | 011df46e94218cbb2f0b8da13ab3cec397246fdc63436e58b1bf597550a647f6 | No              | 
-| 2  | TechPowerUp        | ThrottleStop   | 16f83f056177c4ec24c7e99d01ca9d9d6713bd0497eeedb777a3ffefa99c97f0 | No              |
-| 3  | Lenovo             | LnvMSRIO       | 245b6ab442a7d53dc30ece28e1c6de727c019669385877cbe929b81aa1a2ad2f | No              |
+| Id | Vendor             | Driver Name    | SHA256                                                           |
+|----|--------------------|----------------|------------------------------------------------------------------|
+| 1  | Toshiba            | TPwSav         | 011df46e94218cbb2f0b8da13ab3cec397246fdc63436e58b1bf597550a647f6 |
+| 2  | TechPowerUp        | ThrottleStop   | 16f83f056177c4ec24c7e99d01ca9d9d6713bd0497eeedb777a3ffefa99c97f0 |
+| 3  | Lenovo             | LnvMSRIO       | 245b6ab442a7d53dc30ece28e1c6de727c019669385877cbe929b81aa1a2ad2f |
 
 ###### * Blacklist state set at commit time. May be inaccurate.
 
