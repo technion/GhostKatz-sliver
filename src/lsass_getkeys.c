@@ -54,7 +54,7 @@ BOOL SearchForCredentialKeys(DWORD dBuildNumber, DWORD64* hAesKeyAddress, DWORD6
     DWORD lsasrvTextSize = pNtHdr->OptionalHeader.SizeOfCode;
 
     //
-    // Search for l_LogSessList signature within wdigest.dll and grab the offset
+    // Search for credential keys signature within lsasrv.dll and grab the offset
     //
     DWORD credentialKeySigOffset = SearchPattern(lsasrvTextBase, lsasrvTextSize, credentialKeySig, KeySigSize);
     if (credentialKeySigOffset == 0) {

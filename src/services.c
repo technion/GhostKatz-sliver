@@ -6,6 +6,66 @@
 #include "services.h"
 
 
+BOOL removeService(void)
+{
+    fnOpenSCManagerA pOpenSCManagerA = (fnOpenSCManagerA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenSCManagerA");
+    fnOpenServiceA pOpenServiceA = (fnOpenServiceA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenServiceA");
+    fnCloseServiceHandle pCloseServiceHandle = (fnCloseServiceHandle)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "CloseServiceHandle");
+    fnControlService pControlService = (fnControlService)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "ControlService");
+    fnDeleteService pDeleteService = (fnDeleteService)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "DeleteService");
+
+    PROVIDER_INFO* prov_info = GetProviderInfo(provider);
+
+    const char* drvBasePath = "C:\\Windows\\System32\\drivers\\";
+    const char* drvName = prov_info->service_name;
+    const char* drvFileName = prov_info->driver_filename;
+    char drvFullPath[MAX_PATH];
+    sprintf(drvFullPath, "%s%s", drvBasePath, drvFileName);
+
+
+    SC_HANDLE hSCManager = pOpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+    if (hSCManager == NULL)
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to open SCM!\n");
+        return FALSE;
+    }
+
+    SC_HANDLE hServiceObject = pOpenServiceA(hSCManager, prov_info->service_name, SERVICE_ALL_ACCESS);
+    if (hServiceObject == NULL)
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Could not open handle to service!\n");
+        pCloseServiceHandle(hSCManager);
+        return FALSE;
+    }
+
+
+    SERVICE_STATUS ServiceStatus;
+    BOOL status = pControlService(hServiceObject, SERVICE_CONTROL_STOP, &ServiceStatus);
+    DWORD ErrorCode = GetLastError();
+    if (status || ServiceStatus.dwCurrentState == SERVICE_STOPPED)
+    {
+        if (pDeleteService(hServiceObject))
+        {
+            BeaconFormatPrintf(&outputbuffer, "[+] Deleted driver service!\n");
+        }
+        else
+        {
+            BeaconFormatPrintf(&outputbuffer, "[!] Failed to delete service!");
+        }
+    }
+    else
+    {
+        BeaconFormatPrintf(&outputbuffer, "[!] Failed to stop service!");
+    }
+    
+    
+    pCloseServiceHandle(hServiceObject);
+    pCloseServiceHandle(hSCManager);
+
+    return TRUE;
+}
+
+
 BOOL isServiceInstalled(void)
 {
     fnOpenSCManagerA pOpenSCManagerA = (fnOpenSCManagerA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenSCManagerA");
@@ -87,6 +147,12 @@ BOOL isServiceInstalled(void)
             BeaconFormatPrintf(&outputbuffer, "[!] Failed to start service : %lu\n", GetLastError());
             pCloseServiceHandle(hServiceObject);
             pCloseServiceHandle(hSCManager);
+
+            if (!removeService())
+            {
+                BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
+            }
+
             return FALSE;
         }
     }
@@ -98,64 +164,6 @@ BOOL isServiceInstalled(void)
         return TRUE;
     }
 
-
-    return TRUE;
-}
-
-BOOL removeService(void)
-{
-    fnOpenSCManagerA pOpenSCManagerA = (fnOpenSCManagerA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenSCManagerA");
-    fnOpenServiceA pOpenServiceA = (fnOpenServiceA)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "OpenServiceA");
-    fnCloseServiceHandle pCloseServiceHandle = (fnCloseServiceHandle)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "CloseServiceHandle");
-    fnControlService pControlService = (fnControlService)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "ControlService");
-    fnDeleteService pDeleteService = (fnDeleteService)GetProcAddress(GetModuleHandleA("Advapi32.dll"), "DeleteService");
-
-    PROVIDER_INFO* prov_info = GetProviderInfo(provider);
-
-    const char* drvBasePath = "C:\\Windows\\System32\\drivers\\";
-    const char* drvName = prov_info->service_name;
-    const char* drvFileName = prov_info->driver_filename;
-    char drvFullPath[MAX_PATH];
-    sprintf(drvFullPath, "%s%s", drvBasePath, drvFileName);
-
-
-    SC_HANDLE hSCManager = pOpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
-    if (hSCManager == NULL)
-    {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to open SCM!\n");
-        return FALSE;
-    }
-
-    SC_HANDLE hServiceObject = pOpenServiceA(hSCManager, prov_info->service_name, SERVICE_ALL_ACCESS);
-    if (hServiceObject == NULL)
-    {
-        BeaconFormatPrintf(&outputbuffer, "[!] Could not open handle to service!\n");
-        pCloseServiceHandle(hSCManager);
-        return FALSE;
-    }
-
-
-    SERVICE_STATUS ServiceStatus;
-
-    if (pControlService(hServiceObject, SERVICE_CONTROL_STOP, &ServiceStatus))
-    {
-        if (pDeleteService(hServiceObject))
-        {
-            BeaconFormatPrintf(&outputbuffer, "[+] Deleted driver service!\n");
-        }
-        else
-        {
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to delete service!");
-        }
-    }
-    else
-    {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to stop service!");
-    }
-    
-    
-    pCloseServiceHandle(hServiceObject);
-    pCloseServiceHandle(hSCManager);
 
     return TRUE;
 }

@@ -101,6 +101,7 @@ int go(char *args, int argLen)
     BeaconFormatPrintf(&outputbuffer, "[+] Enabled SE_PROF_SINGLE_PROCESS_PRIVILEGE\n");
 
 
+    // Get Windows build number
     DWORD NT_MAJOR_VERSION, NT_MINOR_VERSION, NT_BUILD_NUMBER;
     RtlGetNtVersionNumbers(&NT_MAJOR_VERSION, &NT_MINOR_VERSION, &NT_BUILD_NUMBER);
     NT_BUILD_NUMBER &= 0x7FFF;
@@ -133,6 +134,7 @@ int go(char *args, int argLen)
     }
 
 
+    // Check which Superfetch version to use based on build number
     BOOL use_PF_MEMORYRANGEINFO_V2 = TRUE;
 
     if (NT_BUILD_NUMBER < KULL_M_WIN_BUILD_10_1803)  // https://www.unknowncheats.me/forum/general-programming-and-reversing/397104-ntquerysysteminformation-systemsuperfetchinformation.html

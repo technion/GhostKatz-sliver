@@ -53,9 +53,6 @@ Drivers that can be exploited with GhostKatz
 | 2  | TechPowerUp        | ThrottleStop   | 16f83f056177c4ec24c7e99d01ca9d9d6713bd0497eeedb777a3ffefa99c97f0 |
 | 3  | Lenovo             | LnvMSRIO       | 245b6ab442a7d53dc30ece28e1c6de727c019669385877cbe929b81aa1a2ad2f |
 
-###### * Blacklist state set at commit time. May be inaccurate.
-
-
 ## Resources
 * [Outflank - Mapping Virtual to Physical Addresses Using Superfetch](https://www.outflank.nl/blog/2023/12/14/mapping-virtual-to-physical-adresses-using-superfetch/)
 * [UnknownCheats - [Information] NtQuerySystemInformation SystemSuperfetchInformation by Midi12](https://www.unknowncheats.me/forum/general-programming-and-reversing/397104-ntquerysysteminformation-systemsuperfetchinformation.html)

