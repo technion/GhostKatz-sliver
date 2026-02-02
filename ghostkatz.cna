@@ -83,8 +83,4 @@ alias ghostkatz {
 	{
 		brm($1, "throttlestop.sys");
 	}
-	else if ($providerNum == 3)
-	{
-		brm($1, "lnvmsrio.sys");
-	}
 }
