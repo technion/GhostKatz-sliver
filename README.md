@@ -32,6 +32,8 @@ Examples:
 
 ## Tested Windows Versions
 These are simply the versions we manually stress tested. Major versions such as 1607 should not have breaking changes across minor build updates.
+- Windows Server 2012 R2
+  - Version 6.3 (OS Build: 9600)
 - Windows Server 2016 
   - Version 1607 (OS Build: 14393.693)
 - Windows Server 2019 

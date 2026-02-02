@@ -2,6 +2,9 @@
 So you want to contribute to GhostKatz! Great! You're in the right place. GhostKatz was created as a hobby project and while we plan to maintain it, there will probably come a time where it will be archived as BYOVD attacks are becoming less and less effective. GhostKatz was originally designed to be modular and it will stay this way to allow researchers and operators to improve it and breathe new life into it.
 
 ## What we're looking for
+- **Bug fixes**
+    - We’ve done our best to identify and fix bugs in this release, but some may still exist. If you spot one and would like to help improve the project, we’d love a pull request with your fix. Please include the OS version and build where you experienced the issue.
+
 - **New providers (drivers)**
     - Do NOT create pull requests for undisclosed driver vulnerabilities. This is irresponsible and enables threat actors.
     - The driver should expose PHYSICAL memory read primitives via `MmMapIoSpace`. There may be room in the future to expand this to virtual memory read primitives, however, `MmMapIoSpace` ignores most kernel-based security mechanisms, allowing GhostKatz to thrive.
