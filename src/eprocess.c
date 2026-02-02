@@ -68,7 +68,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
     int ActiveProcessLinksOffset = 0;
 
     int i = 0;
-    for (i = 0; i < 5; i++) 
+    for (i = 0; i < 9; i++) 
     {
         if ( (dBuildNumber >= EPROCESSOffsetsArray[i].WindowsVersion) && (dBuildNumber < EPROCESSOffsetsArray[i+1].WindowsVersion) )
         {

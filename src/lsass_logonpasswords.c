@@ -140,7 +140,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
     TranslateUVA2Physical(LogonSessionListHead, &tmpPA, lower32bits, LsassPID);
     Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
 
-
+    
     int i = 0;
     while (Flink != LogonSessionListHead) // Did a full circle back to the beginning of the linked list
     {
@@ -150,7 +150,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
             break; // Invalid address, break out of loop
         }
         BeaconFormatPrintf(&outputbuffer, "[%04d] Flink Base Address  : 0x%llx\n", i, Flink);
-        
+
 
         wchar_t* UserNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + LSA_UNICODE_STRING_UserName, lower32bits, LsassPID);
         if (UserNameWideString == NULL || *UserNameWideString == L'\0')

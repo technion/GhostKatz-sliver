@@ -58,6 +58,12 @@ WINBASEAPI VOID WINAPI NTDLL$RtlGetNtVersionNumbers(DWORD *MajorVersion, DWORD *
 #define RtlGetNtVersionNumbers NTDLL$RtlGetNtVersionNumbers
 
 // MSVCRT
+WINBASEAPI size_t __cdecl MSVCRT$wcslen(const wchar_t* _Str);
+#define wcslen MSVCRT$wcslen
+
+WINBASEAPI size_t __cdecl MSVCRT$strlen(const char* _Str);
+#define strlen MSVCRT$strlen
+
 WINBASEAPI void* __cdecl MSVCRT$memcpy(void* __restrict__ _Dst, const void* __restrict__ _Src, size_t _MaxCount);
 #define memcpy MSVCRT$memcpy
 

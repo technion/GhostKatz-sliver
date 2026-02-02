@@ -39,6 +39,10 @@ DWORD64 SearchForLogSessList(void)
 }
 
 
+//
+// You can view structure of the WDigest list entry in lsass_offsets.h
+//
+
 BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector)
 {
     DWORD64 tmpPA = 0;
@@ -53,11 +57,6 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
         return FALSE;
     }
     Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
-
-    //
-    // You can view structure of the WDigest list entry in lsass_offsets.h
-    //
-    
 
     // !list -x "dS @$extret+0x30" poi(wdigest!l_LogSessList)
 

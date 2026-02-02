@@ -25,6 +25,7 @@
 #define KULL_M_WIN_BUILD_10_2004	19041
 #define KULL_M_WIN_BUILD_10_20H2	19042
 #define KULL_M_WIN_BUILD_10_21H2	19044
+#define KULL_M_WIN_BUILD_10_22H2	19045 // custom
 #define KULL_M_WIN_BUILD_2022		20348
 #define KULL_M_WIN_BUILD_11_22H2	22621
 #define KULL_M_WIN_BUILD_11_24H2    26100
@@ -103,12 +104,15 @@ typedef struct {
 } EPROCESSOffsets;
 
 EPROCESSOffsets EPROCESSOffsetsArray[] = {
+{KULL_M_WIN_BUILD_2K3, 0xe0},      // Windows XP | Server 2003 5.2 3790
+{KULL_M_WIN_BUILD_VISTA, 0xe8},    // Windows Vista | Server 2008 6.0 6002 6.0 6000
+{KULL_M_WIN_BUILD_7, 0x188},       // Windows 7 | Server 2008R2 6.1 7601 to 6.1 7600
 {KULL_M_WIN_BUILD_8, 0x2e8},       // 9600 (Windows 8.1 / Server 2012 R2) to 9200 (Windows 8 / Server 2012)
 {KULL_M_WIN_BUILD_10_1507, 0x2f0}, // (1607) 14393 to (1507) 10240
 {KULL_M_WIN_BUILD_10_1703, 0x2e8}, // (1809) 17763 to (1703) 15063
 {KULL_M_WIN_BUILD_10_1903, 0x2f0}, // (1909) 18363 to (1903) 18362
-{KULL_M_WIN_BUILD_10_2004, 0x448}, // (22h2) 19045 to (2004) 19041
-{KULL_M_WIN_BUILD_11_24H2, 0x1d8}
+{KULL_M_WIN_BUILD_10_2004, 0x448}, // Windows 11 23H2 (22631) to 2004 (19041). Also includes: Server 2022 21H2 (20348)
+{KULL_M_WIN_BUILD_11_24H2, 0x1d8}  // Includes Windows 11 25h2 to Windows 11 24h2. Also includes: Server 2025 24h2
 };
 
 
