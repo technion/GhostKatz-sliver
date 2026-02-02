@@ -194,7 +194,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
         // poi( poi(lsasrv!LogonSessionList) + 0x108)
         TranslateUVA2Physical(Flink + PKIWI_MSV1_0_CREDENTIALS_Credentials, &tmpPA, lower32bits, LsassPID);
         DWORD64 credentialsStruct = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
-        if (credentialsStruct != 0)
+        if ( (_wcsicmp(UserNameWideString, L"(null)") != 0 ) && (credentialsStruct != 0) )
         {
             // poi( poi( poi(lsasrv!LogonSessionList) + 0x108) + 0x10)
             if (TranslateUVA2Physical(credentialsStruct + PKIWI_MSV1_0_PRIMARY_CREDENTIALS_PrimaryCredentials, &tmpPA, lower32bits, LsassPID))
