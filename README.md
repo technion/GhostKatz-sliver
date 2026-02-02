@@ -30,6 +30,10 @@ Examples:
   ghostkatz wdigest
 ```
 
+## Demo
+![GhostKatz Demo](img/demo.gif)
+
+
 ## Tested Windows Versions
 These are simply the versions we manually stress tested. Major versions such as 1607 should not have breaking changes across minor build updates.
 - Windows Server 2012 R2
