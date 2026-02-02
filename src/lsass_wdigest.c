@@ -106,14 +106,14 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
         // since this is a UnicodeString struct and offset 0x2 contains the max length, we get 0x52 from 0x50 + 0x2
         BYTE MaxLengthOfString = 0;
         ReadByte(hFile, FlinkPA + 0x52, &MaxLengthOfString);
-        if ( (_wcsicmp(UserNameWideString, L"(null)") != 0 ) && (MaxLengthOfString != 0) )
+        if ( (_wcsicmp(UserNameWideString, L"(null)") != 0 ) && (_wcsicmp(DomainNameWideString, L"(null)") != 0) && (MaxLengthOfString != 0) )
         {
             NTSTATUS status;
             ULONG cbResult = 0;
             BCRYPT_ALG_HANDLE hAlgorithm = NULL;
             BCRYPT_KEY_HANDLE hKey = NULL;
 
-            UCHAR* bOutput = malloc(MaxLengthOfString);
+            UCHAR* bOutput = (UCHAR*)malloc(MaxLengthOfString + sizeof(wchar_t));
 
             // We need to make a copy of the IV for each iteration since the InitializationVector buffer will change after BCryptDecrypt is called
             size_t ivLen = 16;
@@ -128,7 +128,10 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
                 status = BCryptDecrypt(hKey, cryptoBlob, MaxLengthOfString, 0, ivCopy, 8, bOutput, MaxLengthOfString, &cbResult, 0);
                 if (status == STATUS_SUCCESS)
                 {
-
+                    if (cbResult < MaxLengthOfString + sizeof(wchar_t))
+                    {
+                        *(wchar_t*)((PBYTE)bOutput + cbResult) = L'\0';
+                    }
                     size_t usernameLength = wcslen(UserNameWideString);
                     if (usernameLength > 0 && UserNameWideString[usernameLength - 1] == L'$')
                     {
