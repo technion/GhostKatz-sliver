@@ -132,7 +132,7 @@ BOOL DisplayWDigestLogSessListInformation(HANDLE hFile, DWORD64 l_LogSessListHea
                     size_t usernameLength = wcslen(UserNameWideString);
                     if (usernameLength > 0 && UserNameWideString[usernameLength - 1] == L'$')
                     {
-                        size_t passwordLength = wcslen((wchar_t*)bOutput);
+                        size_t passwordLength = wcslen((wchar_t*)bOutput) * 2;
                         BeaconFormatPrintf(&outputbuffer, "\t    * Password    : ");
                         PrintHex(bOutput, passwordLength);
                     }

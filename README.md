@@ -5,6 +5,8 @@ This tool was developed in collaboration between [Julian Peña](https://github.c
 
 This release of GhostKatz uses drivers that have already been publicly disclosed as vulnerable. For best results, GhostKatz is intended to operate with kernel drivers that expose read-memory primitive vulnerabilities and are not blocked during loading / publicly known. This public release does not include exploits for previously undisclosed drivers. Instead, the project is designed to be modular and extensible, allowing users to research their own drivers and integrate them by extending the read-memory primitive functions in `utils.c`. Internally, we have automated the discovery and exploitation process and maintain several signed kernel drivers with written exploits.
 
+If you would like to contribute, please see the [contribution documentation](https://github.com/RainbowDynamix/GhostKatz/blob/main/CONTRIBUTING.md).
+
 ## Why did we make GhostKatz?
 We wanted to start learning how to exploit kernel drivers and thought this would be a cool project. We were also inspired when we saw Outflank's KernelKatz tool and wanted to use it, but we do not have Outflank since we are students. So we made our own.
 

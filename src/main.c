@@ -89,7 +89,7 @@ int go(char *args, int argLen)
     }
 
     // We can create buffer now that the initial checks have passed
-    BeaconFormatAlloc(&outputbuffer, 4096);
+    BeaconFormatAlloc(&outputbuffer, 12288);
 
     BOOL bResult = EnablePrivilege(SE_PROF_SINGLE_PROCESS_PRIVILEGE);
     if (!bResult) 

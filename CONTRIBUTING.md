@@ -11,6 +11,9 @@ So you want to contribute to GhostKatz! Great! You're in the right place. GhostK
         - We did our best to include offsets for most Windows versions, but some will be missing. It is important to know that this technique is less viable on the latest version of Windows thanks to protections such as Credential Guard.
         - Just because you add offsets, that doesn't mean they will be accepted. The new offsets should be reviewed and tested extensively.
 
+- **Support for other C2 frameworks**
+    - GhostKatz only supports Cobalt Strike due to its reliance on the client-side aggressor script. Modifications that allow compatibility with open source C2 frameworks such as Mythic, Havoc, Sliver, etc are welcomed.
+
 ## Adding new providers
 Providers are stored in the `providers[]` array of `PROVIDER_INFO` structures:
 
@@ -42,11 +45,4 @@ The `service_name` field is the name of the service registered with the service 
 
 It should go without saying that the driver file in `driver_filename` must exist in `/drivers`..
 
-Dumping LSASS via the read primitive is a complex task involving reading pointers and parsing several kernel data structures. Instead of reimplementing the logic, you should create a set of "API functions." The API functions will be used to read physical memory. The rest is taken care of.
-
-
-```
-BOOL prefixReadByte(HANDLE hFile, ULONG_PTR PhysicalAddress, PBYTE ReadValue);
-BOOL prefixReadMultipleBytes(HANDLE hFile, int NumberOfBytesToRead, DWORD64 PhysicalAddress, BOOL Forwards);
-BOOL prefixReadAddressAtPhysicalAddressLocation(HANDLE hFile, DWORD64 PhysicalAddress);
-```
+Dumping LSASS via the read primitive is a complex task involving reading pointers and parsing several kernel data structures. Instead of reimplementing the logic, you update `provider.h` to include a new provider ID, fill in the fields of `PROVIDER_INFO` in `provider.c`, then add a case to the switch statement in [ReadByte](https://github.com/RainbowDynamix/GhostKatz/blob/5e579eadbb76ac2618eadc01e245dd79f837336f/src/utils.c#L21) from `utils.c` such that the return value is a byte at the physical address specified as a result of the `pDeviceIoControl` call. Additionally, the `ghostkatz.cna` aggressor script should be modified to upload and remove the driver file.
