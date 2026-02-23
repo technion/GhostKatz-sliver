@@ -1,18 +1,15 @@
 BOFNAME := ghostkatz
-BIN_DIR := bin
+
 
 CC_x64  := x86_64-w64-mingw32-gcc
-CC_x86  := i686-w64-mingw32-gcc
 
-.PHONY: all clean x86 x64
 
-all: clean $(BIN_DIR) x86 x64
+.PHONY: all clean x64
 
-$(BIN_DIR):
-	mkdir -p $(BIN_DIR)
+all: clean x64
 
 x64:
-	$(CC_x64) -o $(BIN_DIR)/$(BOFNAME).x64.o -Os -c src/main.c -Wno-pointer-to-int-cast -Wno-int-conversion
+	$(CC_x64) -o $(BOFNAME).x64.o -Os -c src/main.c -Wno-pointer-to-int-cast -Wno-int-conversion
 
 clean:
-	rm -f $(BIN_DIR)/$(BOFNAME).*.o
+	rm -f $(BOFNAME).*.o
