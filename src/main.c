@@ -26,32 +26,22 @@ int go(char *args, int argLen)
     datap parser;
 	BeaconDataParse(&parser, args, argLen);
     
-    int prvFlagLen = 0;
     int modeLen = 0;
-    char* prvFlag = BeaconDataExtract(&parser, &prvFlagLen);
-    if (BeaconDataLength(&parser) < (int)sizeof(int))
-    {
-        BeaconPrintf(CALLBACK_ERROR, "Missing arguments!");
-        return FALSE;
-    }
-    
-    provider = BeaconDataInt(&parser);
     char* mode = BeaconDataExtract(&parser, &modeLen);
-    
+
     if (!mode || modeLen <= 0 || mode[0] == '\0')
     {
-        BeaconPrintf(CALLBACK_ERROR, "Missing arguments!");
+        BeaconPrintf(CALLBACK_ERROR, "Missing mode argument (logonpasswords or wdigest)!");
         return FALSE;
     }
 
-    if (prvFlag && prvFlag[0] != '\0')
+    if (BeaconDataLength(&parser) >= (int)sizeof(int))
     {
-        if (strcmp(prvFlag, "-prv") != 0)
-        {
-            BeaconPrintf(CALLBACK_ERROR, "Invalid argument %s", prvFlag);
-            return FALSE;
-        }
+        provider = BeaconDataInt(&parser);
     }
+
+    if (provider <= 0)
+        provider = 1;
 
     if (BeaconDataLength(&parser) != 0)
     {
