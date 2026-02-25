@@ -26,14 +26,14 @@ BOOL removeService(void)
     SC_HANDLE hSCManager = pOpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
     if (hSCManager == NULL)
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to open SCM!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to open SCM!\n");
         return FALSE;
     }
 
     SC_HANDLE hServiceObject = pOpenServiceA(hSCManager, prov_info->service_name, SERVICE_ALL_ACCESS);
     if (hServiceObject == NULL)
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Could not open handle to service!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Could not open handle to service!\n");
         pCloseServiceHandle(hSCManager);
         return FALSE;
     }
@@ -46,16 +46,16 @@ BOOL removeService(void)
     {
         if (pDeleteService(hServiceObject))
         {
-            BeaconFormatPrintf(&outputbuffer, "[+] Deleted driver service!\n");
+            BeaconPrintf(CALLBACK_OUTPUT, "[+] Deleted driver service!\n");
         }
         else
         {
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to delete service!");
+            BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to delete service!\n");
         }
     }
     else
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to stop service!");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to stop service!\n");
     }
     
     
@@ -88,7 +88,7 @@ BOOL isServiceInstalled(void)
     SC_HANDLE hSCManager = pOpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
     if (hSCManager == NULL)
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to open SCM!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to open SCM!\n");
         return FALSE;
     }
 
@@ -111,25 +111,25 @@ BOOL isServiceInstalled(void)
 
             if (hServiceObject == NULL)
             {
-                BeaconFormatPrintf(&outputbuffer, "[!] Failed to create driver service! 0x%llx\n", GetLastError());
+                BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to create driver service! 0x%lx\n", GetLastError());
                 pCloseServiceHandle(hSCManager);
                 return FALSE;
             }
             else
             {
-                BeaconFormatPrintf(&outputbuffer, "[+] Created driver service!\n");
+                BeaconPrintf(CALLBACK_OUTPUT, "[+] Created driver service!\n");
             }
         }
         else
         {
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to open service object!\n");
+            BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to open service object! 0x%lx\n", GetLastError());
             pCloseServiceHandle(hSCManager);
             return FALSE;
         }
     }
     else
     {
-        BeaconFormatPrintf(&outputbuffer, "[+] Found pre-existing driver service.\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[+] Found pre-existing driver service.\n");
     }
 
 
@@ -137,20 +137,20 @@ BOOL isServiceInstalled(void)
     {
         if (GetLastError() == ERROR_SERVICE_ALREADY_RUNNING)
         {
-            BeaconFormatPrintf(&outputbuffer, "[+] Service already running.\n");
+            BeaconPrintf(CALLBACK_OUTPUT, "[+] Service already running.\n");
             pCloseServiceHandle(hServiceObject);
             pCloseServiceHandle(hSCManager);
             return TRUE;
         }
         else
         {
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to start service : %lu\n", GetLastError());
+            BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to start service: 0x%lx\n", GetLastError());
             pCloseServiceHandle(hServiceObject);
             pCloseServiceHandle(hSCManager);
 
             if (!removeService())
             {
-                BeaconFormatPrintf(&outputbuffer, "[!] Failed to remove driver service!\n");
+                BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to remove driver service!\n");
             }
 
             return FALSE;
@@ -158,7 +158,7 @@ BOOL isServiceInstalled(void)
     }
     else
     {
-        BeaconFormatPrintf(&outputbuffer, "[+] Started driver service.\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[+] Started driver service.\n");
         pCloseServiceHandle(hServiceObject);
         pCloseServiceHandle(hSCManager);
         return TRUE;

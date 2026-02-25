@@ -75,7 +75,7 @@ int go(char *args, int argLen)
     }
     else
     {
-        BeaconPrintf(CALLBACK_OUTPUT, "[INFO] Provider: %s", prov_info->service_name);
+        BeaconPrintf(CALLBACK_OUTPUT, "[INFO] Provider: %s\n", prov_info->service_name);
     }
 
     // We can create buffer now that the initial checks have passed
@@ -88,20 +88,21 @@ int go(char *args, int argLen)
         BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
-    BeaconFormatPrintf(&outputbuffer, "[+] Enabled SE_PROF_SINGLE_PROCESS_PRIVILEGE\n");
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Enabled SE_PROF_SINGLE_PROCESS_PRIVILEGE\n");
 
 
     // Get Windows build number
     DWORD NT_MAJOR_VERSION, NT_MINOR_VERSION, NT_BUILD_NUMBER;
     RtlGetNtVersionNumbers(&NT_MAJOR_VERSION, &NT_MINOR_VERSION, &NT_BUILD_NUMBER);
     NT_BUILD_NUMBER &= 0x7FFF;
-    BeaconFormatPrintf(&outputbuffer, "[+] Windows Build Number: %ld\n", NT_BUILD_NUMBER);
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Windows Build Number: %ld\n", NT_BUILD_NUMBER);
 
 
     // Install service
     if (!isServiceInstalled())
     {
-        BeaconPrintf(CALLBACK_OUTPUT, "%s", BeaconFormatToString(&outputbuffer, NULL));
+        char* bufOut = BeaconFormatToString(&outputbuffer, NULL);
+        if (bufOut) BeaconPrintf(CALLBACK_OUTPUT, "%s", bufOut);
         BeaconFormatFree(&outputbuffer);
         return FALSE;
     }
