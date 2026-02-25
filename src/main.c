@@ -101,7 +101,7 @@ int go(char *args, int argLen)
     // Install service
     if (!isServiceInstalled())
     {
-        size_t bufLen = 0;
+        int bufLen = 0;
         char* bufOut = BeaconFormatToString(&outputbuffer, &bufLen);
         if (bufOut && bufLen > 0) BeaconPrintf(CALLBACK_OUTPUT, "%s", bufOut);
         BeaconFormatFree(&outputbuffer);
@@ -167,7 +167,7 @@ int go(char *args, int argLen)
         BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to remove driver service!\n");
     }
 
-    size_t bufLen = 0;
+    int bufLen = 0;
     char* bufOut = BeaconFormatToString(&outputbuffer, &bufLen);
     if (bufOut && bufLen > 0) BeaconPrintf(CALLBACK_OUTPUT, "%s", bufOut);
     BeaconFormatFree(&outputbuffer);
