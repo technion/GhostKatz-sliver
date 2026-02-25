@@ -6,6 +6,7 @@
     "original_author": "Julian Peña (RainbowDynamix), Eric Esquivel (EricEsquivel)",
     "repo_url": "https://github.com/RainbowDynamix/GhostKatz",
     "help": "Dump LSASS credentials via signed vulnerable kernel drivers using physical memory read primitives",
+    "depends_on": "coff-loader",
     "long_help": "GhostKatz extracts LSASS credentials directly from physical memory by exploiting signed\nvulnerable kernel drivers (BYOVD), bypassing traditional user-mode detection.\n\nPRE-REQUISITES:\n  - Session must have administrator/SYSTEM privileges\n  - Upload the appropriate driver to C:\\Windows\\System32\\drivers\\ before execution:\n      Provider 1 (default): drivers/tpwsav.sys   (Toshiba TPwSav)\n      Provider 2:           drivers/throttlestop.sys (TechPowerUp ThrottleStop)\n\nUSAGE:\n  ghostkatz <mode> [provider]\n\nEXAMPLES:\n  ghostkatz logonpasswords\n  ghostkatz logonpasswords 2\n  ghostkatz wdigest\n  ghostkatz wdigest 2\n\nPROVIDERS:\n  ID  Vendor        Driver           SHA256\n  1   Toshiba       tpwsav.sys       011df46e94218cbb2f0b8da13ab3cec397246fdc63436e58b1bf597550a647f6\n  2   TechPowerUp   throttlestop.sys 16f83f056177c4ec24c7e99d01ca9d9d6713bd0497eeedb777a3ffefa99c97f0",
     "entrypoint": "go",
     "files": [
