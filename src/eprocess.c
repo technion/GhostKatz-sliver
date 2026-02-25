@@ -67,10 +67,11 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
 {
     int ActiveProcessLinksOffset = 0;
 
-    int i = 0;
-    for (i = 0; i < 9; i++) 
+    int arraySize = sizeof(EPROCESSOffsetsArray) / sizeof(EPROCESSOffsetsArray[0]);
+    int i = arraySize - 1;
+    for (; i >= 0; i--)
     {
-        if ( (dBuildNumber >= EPROCESSOffsetsArray[i].WindowsVersion) && (dBuildNumber < EPROCESSOffsetsArray[i+1].WindowsVersion) )
+        if (dBuildNumber >= EPROCESSOffsetsArray[i].WindowsVersion)
         {
             ActiveProcessLinksOffset = EPROCESSOffsetsArray[i].ActiveProcessLinksOffset;
 
@@ -80,7 +81,7 @@ DWORD64 GetTargetEProcessAddress(HANDLE hFile, int TargetPID, DWORD64 NtEprocess
 
     if (ActiveProcessLinksOffset == 0)
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to get correct ActiveProcessLinks offset for the current Windows version!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to get correct ActiveProcessLinks offset for Windows build %lu!\n", dBuildNumber);
         return 0;
     }
 

