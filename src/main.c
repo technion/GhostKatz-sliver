@@ -43,12 +43,6 @@ int go(char *args, int argLen)
     if (provider <= 0)
         provider = 1;
 
-    if (BeaconDataLength(&parser) != 0)
-    {
-        BeaconPrintf(CALLBACK_ERROR, "Invalid number of arguments!");
-        return FALSE;
-    }
-
     BOOL RetrieveMSV1Credentials = FALSE;
     BOOL RetrieveWDigestCredentials = FALSE;
 

