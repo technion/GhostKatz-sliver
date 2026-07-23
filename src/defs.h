@@ -40,7 +40,7 @@ BOOL SearchForCredentialKeys(DWORD dBuildNumber, DWORD64* hAesKeyAddress, DWORD6
 
 // lsass_logonpasswords.c
 DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWORD lower32bits, DWORD LsassPID, DWORD64 ImageStartAddress, DWORD dBuildNumber);
-BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector, int UserNameOffset, int DomainOffset, int CredentialsOffset);
+BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector, int UserNameOffset, int DomainOffset, int CredentialsOffset, int NtHashOffset, int Sha1HashOffset);
 
 // lsass_wdigest.c
 DWORD64 SearchForLogSessList(void);

