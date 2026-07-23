@@ -161,5 +161,5 @@ LsassLogonSessionListOffsets LsassLogonSessionListArray[] = {
 {KULL_M_WIN_BUILD_10_1903,   PTRN_WN6x_LogonSessionList,        sizeof(PTRN_WN6x_LogonSessionList),        23, 4, 0x90, 0xA0, 0x108},
 {KULL_M_WIN_BUILD_2022,      PTRN_WN11_LogonSessionList,        sizeof(PTRN_WN11_LogonSessionList),        24, 4, 0x90, 0xA0, 0x108},
 {KULL_M_WIN_BUILD_11_22H2,   PTRN_WN11_22H2_LogonSessionList,   sizeof(PTRN_WN11_22H2_LogonSessionList),   27, 4, 0x90, 0xA0, 0x108},
-{KULL_M_WIN_BUILD_11_24H2,   PTRN_WN11_24H2_LogonSessionList,   sizeof(PTRN_WN11_24H2_LogonSessionList),   25, 9, 0xA0, 0xB0, 0x118},
+{KULL_M_WIN_BUILD_11_24H2,   PTRN_WN11_24H2_LogonSessionList,   sizeof(PTRN_WN11_24H2_LogonSessionList),   25, 4, 0xA0, 0xB0, 0x118},
 };
