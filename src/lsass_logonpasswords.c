@@ -99,17 +99,18 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
         It may look like  "48 8d 0d 97 f8 01 00    lea rcx,[rip+0x1f897] # 0x1f89e"  and we want to get the 0x1f897
         The mimikatz offsets take us directly to the rip offset value we want to retrieve so we have to read 4 bytes forward and reverse the endianness
     */
-    DWORD LogonSessionList_RipOffset =
+    INT32 LogonSessionList_RipOffset =
         (LogonSessionList_PatternAddress[3] << 24) |
         (LogonSessionList_PatternAddress[2] << 16) |
         (LogonSessionList_PatternAddress[1] << 8) |
         (LogonSessionList_PatternAddress[0]);
 
     /*
-        RIP-relative offsets are calculated from the instruction *following* the offset.
-        Mimikatz resolves the address 4 bytes too early (pointing directly at the offset).
-        RipCorrection accounts for the remaining bytes to the end of the instruction (4 for
-        standard LEA; 9 for Win11 24H2 where the encoding is longer).
+        RIP-relative offsets are signed 32-bit displacements, sign-extended by the CPU.
+        Cast to INT32 so negative displacements (LogonSessionList below the instruction)
+        sign-extend correctly when added to the 64-bit PatternAddress.
+        RipCorrection is the distance from PatternAddress to the next instruction
+        (4 for a standard LEA; 9 for Win11 24H2's longer encoding).
     */
     DWORD64 Real_LogonSessionList_Address = LogonSessionList_PatternAddress + LogonSessionList_RipOffset + RipCorrection;
     DWORD64 LogonSessionListPA = 0;
