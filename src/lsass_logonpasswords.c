@@ -3,6 +3,7 @@
 
 #include "ghostkatz.h"
 #include "defs.h"
+#include "lsass.h"
 #include "lsass_offsets.h"
 
 BOOL IsEntryValid(HANDLE hFile, DWORD64 PAtoRead, DWORD lower32bits, int LsassPID, DWORD64 ImageStartAddress)
