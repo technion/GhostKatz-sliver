@@ -1,9 +1,6 @@
 #include <windows.h>
 //#include <winternl.h>
 
-// Forward declaration — defined in lsass_logonpasswords.c (included after lsass.c in main.c)
-BOOL DisplayLogonSessionListInformation(HANDLE hFile, DWORD64 LogonSessionListHead, DWORD lower32bits, DWORD LsassPID, unsigned char* Real3DesKey, int i3DesKeyLength, unsigned char* InitializationVector, int UserNameOffset, int DomainOffset, int CredentialsOffset);
-
 typedef struct _CUSTOM_SYSTEM_PROCESS_INFORMATION {
     ULONG NextEntryOffset;
     ULONG NumberOfThreads;

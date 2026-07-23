@@ -10,11 +10,11 @@
 #include "utils.c"
 #include "privileges.c"
 #include "superfetch.c"
+#include "lsass_logonpasswords.c"
+#include "lsass_wdigest.c"
 #include "lsass.c"
 #include "eprocess.c"
 #include "lsass_getkeys.c"
-#include "lsass_logonpasswords.c"
-#include "lsass_wdigest.c"
 #include "services.c"
 
 formatp outputbuffer;
